@@ -1,11 +1,15 @@
 FROM ubuntu:22.04
 
-COPY . /aosp/treble_aosp
-RUN ln -s /aosp/treble_aosp/build.sh /usr/bin/treblebuild && \
-    ln -s /aosp/treble_aosp/sync.sh /usr/bin/treblesync
-
 ARG DEBIAN_FRONTEND=noninteractive
-RUN dpkg --add-architecture i386 && \
+
+COPY . /aosp/duo-de
+RUN ln -s /aosp/duo-de/full_build.sh /usr/bin/fullbuild && \
+    ln -s /aosp/duo-de/build.sh /usr/bin/treblebuild && \
+    ln -s /aosp/duo-de/sync.sh /usr/bin/treblesync
+
+RUN sed -i 's|http://archive.ubuntu.com|http://mirror.math.princeton.edu/pub/ubuntu|g' /etc/apt/sources.list && \
+    sed -i 's|http://security.ubuntu.com|http://mirror.math.princeton.edu/pub/ubuntu|g' /etc/apt/sources.list && \
+    dpkg --add-architecture i386 && \
     apt update && apt install -y \
     aapt \
     bc \
@@ -47,21 +51,25 @@ RUN dpkg --add-architecture i386 && \
     zip \
     zlib1g \
     zlib1g:i386 ; \
-    apt clean autoclean
-
-RUN locale-gen en_US.UTF-8 && \
+    apt clean autoclean ; \
+    locale-gen en_US.UTF-8 && \
     dpkg-reconfigure locales
 
 RUN curl https://storage.googleapis.com/git-repo-downloads/repo > /usr/local/bin/repo && \
     chmod a+x /usr/local/bin/repo
 
 RUN curl https://packagecloud.io/install/repositories/github/git-lfs/script.deb.sh | bash && \
-    apt update && apt install git-lfs && \
+    apt update && apt install -y git-lfs && \
     git lfs install
 
-RUN git config --global user.name "Archfx" && \
-    git config --global user.email cybx@live.com && \
+RUN git config --global user.name "DUO-DE Builder" && \
+    git config --global user.email "bariccatti@gmail.com" && \
     git config --global color.ui auto
+
+ENV JAVA_HOME=/usr/lib/jvm/java-17-openjdk-amd64
+ENV LANG=en_US.UTF-8
+ENV LANGUAGE=en_US:en
+ENV LC_ALL=en_US.UTF-8
 
 USER root
 WORKDIR /aosp

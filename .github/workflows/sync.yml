@@ -1,4 +1,4 @@
-name: TrebleDroid-Sync
+name: Infinity-X-Sync
 
 on:
   workflow_dispatch:
@@ -11,21 +11,20 @@ jobs:
 
     steps:
     - name: Checkout duo-de
-      uses: actions/checkout@v3
+      uses: actions/checkout@v4
 
-    - name: Checkout treble_aosp
-      uses: actions/checkout@v3
+    - name: Checkout Infinity X patches
+      uses: actions/checkout@v4
       with:
-        repository: ponces/treble_aosp
-        path: treble_aosp
+        repository: Doze-off/patches
+        ref: patches-16.2
+        path: infinity_patches
 
-    - name: Replace folder
+    - name: Replace patches
       run: |
         rm -rf ./patches/trebledroid
-        cp -R ./treble_aosp/patches/trebledroid ./patches/trebledroid
-        rm -rf ./patches/personal
-        cp -R ./treble_aosp/patches/personal ./patches/personal
-        rm -rf ./treble_aosp
+        cp -R ./infinity_patches/trebledroid ./patches/trebledroid
+        rm -rf ./infinity_patches
 
     - name: Configure Git
       run: |
@@ -40,7 +39,7 @@ jobs:
           echo "No changes to commit"
           echo "changes=false" >> $GITHUB_OUTPUT
         else
-          git commit -m "feat: sync with latest sources of TrebleDroid [via Ponces]"
+          git commit -m "feat: sync with latest Infinity X patches [via Doze-off]"
           echo "changes=true" >> $GITHUB_OUTPUT
         fi
 
@@ -49,9 +48,9 @@ jobs:
       uses: peter-evans/create-pull-request@v5
       if: steps.commit_changes.outputs.changes == 'true'
       with:
-        commit-message: "feat: sync with latest sources of TrebleDroid [via Ponces]"
+        commit-message: "feat: sync with latest Infinity X patches [via Doze-off]"
         branch: sync-bot
-        base: main-16
-        title: "TrebleDroid patches"
-        body: "This PR updates the patches from TrebleDroid."
+        base: android-16.2
+        title: "Infinity X Patches Sync"
+        body: "This PR updates the trebledroid patches from Infinity X (Doze-off/patches patches-16.2 branch). Doze-off and ponces patches are curated manually."
         labels: 'automated-pr'

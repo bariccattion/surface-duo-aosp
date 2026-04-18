@@ -1,68 +1,58 @@
 #!/bin/bash
 
+# ================================================================
+# DUO-DE Patch Sync Script
+# Syncs latest Infinity X patches from Doze-off/patches
+# ================================================================
+
+set -euo pipefail
+
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+BLUE='\033[0;34m'
+CYAN='\033[0;36m'
+BOLD='\033[1m'
+NC='\033[0m'
+
 echo
-echo "--------------------------------------"
-echo "          AOSP 16.0 Syncbot           "
-echo "                  by                  "
-echo "                ponces                "
-echo "--------------------------------------"
+echo -e "${BOLD}=========================================${NC}"
+echo -e "${BOLD}   DUO-DE Patch Syncbot"
+echo -e "   Based on Infinity X GSI"
+echo -e "   by Archfx"
+echo -e "${BOLD}=========================================${NC}"
 echo
 
-set -e
-
-BL=$PWD/treble_aosp
-TD="android-16.0"
-
-initRepos() {
-    echo "--> Getting latest upstream version"
-    aosp=$(curl -sL https://github.com/TrebleDroid/treble_manifest/raw/$TD/replace.xml | grep -oP "${TD}.0_r\d+" | head -1)
-    
-    echo "--> Initializing workspace"
-    repo init -u https://android.googlesource.com/platform/manifest -b "$aosp"
-    echo
-
-    echo "--> Preparing local manifest"
-    if [ -d .repo/local_manifests ]; then
-        (cd .repo/local_manifests; git fetch; git reset --hard; git checkout origin/$TD)
-    else
-        git clone https://github.com/TrebleDroid/treble_manifest .repo/local_manifests -b $TD
-    fi
-    echo
-}
-
-syncRepos() {
-    echo "--> Syncing repos"
-    repo sync -c --force-sync --no-clone-bundle --no-tags -j$(nproc --all) || repo sync -c --force-sync --no-clone-bundle --no-tags -j$(nproc --all)
-    echo
-}
-
-generatePatches() {
-    echo "--> Generating patches"
-    rm -rf patchestd patchestd.zip
-    wget -q https://github.com/TrebleDroid/treble_experimentations/raw/master/list-patches.sh -O list-patches.sh
-    sed -i "s/patches/patchestd/g" list-patches.sh
-    bash list-patches.sh
-    echo
-}
-
-updatePatches() {
-    echo "--> Updating patches"
-    rm -rf $BL/patches/trebledroid
-    unzip -q patchestd.zip
-    mv patchestd $BL/patches/trebledroid
-    echo
-}
+BL="$PWD/duo-de"
+TD="patches-16.2"
 
 START=$(date +%s)
 
-initRepos
-syncRepos
-generatePatches
-updatePatches
+log_info()    { echo -e "${BLUE}[INFO]${NC}    $1"; }
+log_success() { echo -e "${GREEN}[OK]${NC}      $1"; }
+
+log_info "Cloning Infinity X patches (branch: $TD)"
+rm -rf /tmp/infinity_patches
+git clone --depth=1 https://github.com/Doze-off/patches -b "$TD" /tmp/infinity_patches
+log_success "Patches cloned"
+
+log_info "Updating trebledroid patches"
+rm -rf "$BL/patches/trebledroid"
+cp -R /tmp/infinity_patches/trebledroid "$BL/patches/trebledroid"
+log_success "Trebledroid patches updated"
+
+log_info "Note: doze-off patches are curated manually, not auto-synced"
+log_info "Note: ponces patches are kept as reference, not auto-synced"
+
+log_info "Cleaning up temp files"
+rm -rf /tmp/infinity_patches
+log_success "Cleanup done"
 
 END=$(date +%s)
-ELAPSEDM=$(($(($END-$START))/60))
-ELAPSEDS=$(($(($END-$START))-$ELAPSEDM*60))
+ELAPSED=$((END - START))
+MINUTES=$((ELAPSED / 60))
+SECONDS=$((ELAPSED % 60))
 
-echo "--> Syncbot completed in $ELAPSEDM minutes and $ELAPSEDS seconds"
+echo
+echo -e "${GREEN}${BOLD}  Sync complete${NC} — ${MINUTES}m ${SECONDS}s"
 echo

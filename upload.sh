@@ -1,62 +1,82 @@
 #!/bin/bash
 
+# ================================================================
+# DUO-DE Upload Script
+# Creates GitHub release and uploads build artifacts
+# ================================================================
+
+set -euo pipefail
+
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+BLUE='\033[0;34m'
+CYAN='\033[0;36m'
+BOLD='\033[1m'
+NC='\033[0m'
+
 echo
-echo "--------------------------------------"
-echo "         AOSP 16.0 Uploadbot          "
-echo "                  by                  "
-echo "                ArchFX                "
-echo "--------------------------------------"
+echo -e "${BOLD}=========================================${NC}"
+echo -e "${BOLD}   DUO-DE Uploadbot"
+echo -e "   Based on Infinity X GSI"
+echo -e "   by Archfx"
+echo -e "${BOLD}=========================================${NC}"
 echo
 
-set -e
-
-BL=$PWD/treble_aosp
-BD=$PWD/duo-de/builds
+BL="$PWD/duo-de"
+BD="$PWD/duo-de/builds"
 TAG="$(date +v%Y.%m.%d)"
-GUSER="archfx"
-# GREPO="duoPosture"
-# GREPO="duoTreble"
-GREPO="duo-de"
+GUSER="bariccattion"
+GREPO="surface-duo-aosp"
 
 SKIPOTA=false
-if [ "$1" == "--skip-ota" ]; then
+if [ "${1:-}" == "--skip-ota" ]; then
     SKIPOTA=true
 fi
 
-createRelease() {
-    echo "--> Creating release $TAG"
-    res=$(gh release create "$TAG" --repo "$GUSER/$GREPO" --title "$TAG"  )
-    echo
-}
-
-uploadAssets() {
-    buildDate="$(date +%Y%m%d)"
-    find $BD/ -name "aosp-*-16.0-$buildDate.img.xz" | while read file; do
-        echo "--> Uploading $(basename $file)"
-        gh release upload "$TAG" "$file" --repo "$GUSER/$GREPO"
-        echo
-    done
-}
-
-updateOta() {
-    cd treble_aosp
-    echo "--> Updating OTA file"
-    git add config/ota.json
-    git commit -m "build: Bump OTA to $TAG"
-    git push --set-upstream origin main-16
-    echo
-    cd ..
-}
+log_info()    { echo -e "${BLUE}[INFO]${NC}    $1"; }
+log_success() { echo -e "${GREEN}[OK]${NC}      $1"; }
+log_error()   { echo -e "${RED}[ERROR]${NC}   $1"; }
+log_upload()  { echo -e "${CYAN}[UPLOAD]${NC}  $1"; }
 
 START=$(date +%s)
 
-createRelease
-uploadAssets
-[ "$SKIPOTA" = false ] && updateOta
+log_info "Creating release $TAG"
+gh release create "$TAG" --repo "$GUSER/$GREPO" --title "$TAG"
+log_success "Release $TAG created"
+
+BUILD_DATE="$(date +%Y%m%d)"
+UPLOADED=0
+
+find "$BD/" -name "aosp-*-16.0-$BUILD_DATE.img.xz" | while read -r file; do
+    filename="$(basename "$file")"
+    SIZE=$(du -h "$file" | awk '{print $1}')
+    log_upload "$filename ($SIZE)"
+    if gh release upload "$TAG" "$file" --repo "$GUSER/$GREPO"; then
+        log_success "Uploaded $filename"
+        UPLOADED=$((UPLOADED + 1))
+    else
+        log_error "Failed to upload $filename"
+    fi
+done
+
+if [ "$SKIPOTA" = false ]; then
+    log_info "Updating OTA file"
+    cd "$BL"
+    git add config/ota.json
+    git commit -m "build: Bump OTA to $TAG"
+    git push --set-upstream origin android-16.2 || git push --set-upstream origin android-16.2
+    cd ..
+    log_success "OTA updated and pushed"
+else
+    log_info "Skipping OTA update (--skip-ota)"
+fi
 
 END=$(date +%s)
-ELAPSEDM=$(($(($END-$START))/60))
-ELAPSEDS=$(($(($END-$START))-$ELAPSEDM*60))
+ELAPSED=$((END - START))
+MINUTES=$((ELAPSED / 60))
+SECONDS=$((ELAPSED % 60))
 
-echo "--> Uploadbot completed in $ELAPSEDM minutes and $ELAPSEDS seconds"
+echo
+echo -e "${GREEN}${BOLD}  Upload complete${NC} — ${MINUTES}m ${SECONDS}s"
 echo

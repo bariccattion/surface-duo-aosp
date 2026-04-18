@@ -1,180 +1,181 @@
 #!/bin/bash
 
-echo
-echo "--------------------------------------"
-echo "          AOSP 16.0 Buildbot          "
-echo "                  by                  "
-echo "                ponces                "
-echo "--------------------------------------"
-echo
+# ================================================================
+# DUO-DE AOSP 16.0 QPR2 Buildbot
+# Based on Infinity X GSI
+# by Archfx
+# ================================================================
 
-set -e
+set -euo pipefail
 
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+BLUE='\033[0;34m'
+CYAN='\033[0;36m'
+BOLD='\033[1m'
+DIM='\033[2m'
+NC='\033[0m'
+
+echo
+echo -e "${BOLD}=========================================${NC}"
+echo -e "${BOLD}   DUO-DE AOSP 16.0 QPR2 Buildbot"
+echo -e "   Based on Infinity X GSI"
+echo -e "   by Archfx"
+echo -e "${BOLD}=========================================${NC}"
+echo
 
 export BUILD_NUMBER="$(date +%y%m%d)"
 
-BUILD_ROOT="$PWD/treble_aosp"
-BUILD_DIR=$PWD/duo-de/builds
+BUILD_ROOT="$PWD/duo-de"
+BUILD_DIR="$PWD/duo-de/builds"
+INFINITY_MANIFEST_URL="https://github.com/ProjectInfinity-X/manifest"
+INFINITY_MANIFEST_BRANCH="16"
+PATCHES_DIR="$BUILD_ROOT/patches"
 
+log_info()    { echo -e "${BLUE}[INFO]${NC}    $1"; }
+log_success() { echo -e "${GREEN}[OK]${NC}      $1"; }
+log_step()    { echo -e "\n${CYAN}${BOLD}==>${NC} $1"; }
 
 initRepos() {
-    echo "--> Initializing workspace"
-    
-    repo init -u https://android.googlesource.com/platform/manifest -b android-16.0.0_r2 --git-lfs
-    echo
+    log_step "Initializing workspace"
+    repo init --depth=1 --no-repo-verify --git-lfs \
+        -u "$INFINITY_MANIFEST_URL" \
+        -b "$INFINITY_MANIFEST_BRANCH" \
+        -g default,-mips,-darwin,-notdefault --config-name
+    log_success "Repo initialized"
 
-    echo "--> Preparing local manifest"
+    log_info "Installing DUO-DE local manifests"
     mkdir -p .repo/local_manifests
-    cp $BUILD_ROOT/build/default.xml .repo/local_manifests/default.xml
-    cp $BUILD_ROOT/build/remove.xml .repo/local_manifests/remove.xml
-    echo
+    cp "$BUILD_ROOT/build/duode.xml" .repo/local_manifests/duode.xml
+    [ -f "$BUILD_ROOT/build/remove.xml" ] && cp "$BUILD_ROOT/build/remove.xml" .repo/local_manifests/remove.xml
+    log_success "Local manifests installed"
 }
 
 syncRepos() {
-    echo "--> Syncing repos"
-    repo forall -c 'git checkout -f' 
-    repo forall -c 'git clean -fd'
-    repo sync -c --force-sync --no-clone-bundle --no-tags -j$(nproc --all) || repo sync -c --force-sync --no-clone-bundle --no-tags -j$(nproc --all)
-    echo
+    log_step "Syncing repos"
+    repo sync -c --no-clone-bundle --no-tags --optimized-fetch --prune --force-sync -j"$(nproc --all)" \
+        || repo sync -c --no-clone-bundle --no-tags --optimized-fetch --prune --force-sync -j"$(nproc --all)"
+    log_success "Repo sync complete"
 }
 
 applyPatches() {
-    echo "--> Applying TrebleDroid patches"
-    bash $BUILD_ROOT/patch.sh $BUILD_ROOT trebledroid
-    echo
+    log_step "Applying patches"
+    ln -sf "$BUILD_ROOT/patches" "$PWD/patches"
 
-    echo "--> Applying personal patches"
-    bash $BUILD_ROOT/patch.sh $BUILD_ROOT personal
-    echo
+    log_info "TrebleDroid patches"
+    bash "$PATCHES_DIR/apply-patches.sh" "$(pwd)" trebledroid
 
-    echo "--> Applying DUO-DE patches"
-    bash $BUILD_ROOT/patch.sh $BUILD_ROOT duo
-    echo
+    log_info "Ponces personal patches"
+    bash "$PATCHES_DIR/apply-patches.sh" "$(pwd)" ponces
 
-    echo "--> Generating makefiles"
+    log_info "Doze-off personal patches"
+    bash "$PATCHES_DIR/apply-patches.sh" "$(pwd)" doze-off
+
+    log_info "DUO-DE patches"
+    bash "$BUILD_ROOT/patch.sh" "$BUILD_ROOT" duo
+
+    log_step "Generating makefiles"
     cd device/phh/treble
-    cp $BUILD_ROOT/build/aosp.mk .
+    cp "$BUILD_ROOT/build/aosp.mk" .
     bash generate.sh aosp
     cd ../../..
-    echo
+    log_success "Makefiles generated"
 }
 
 setupEnv() {
-    echo "--> Setting up build environment"
-    mkdir -p $BUILD_DIR
-    source build/envsetup.sh
+    log_step "Setting up build environment"
+    mkdir -p "$BUILD_DIR"
+    source build/envsetup.sh > /dev/null 2>&1
     source build/core/build_id.mk
-    echo
+    log_success "Build environment ready"
 }
 
 buildTrebleApp() {
-    echo "--> Building treble_app"
+    log_step "Building treble_app"
     cd treble_app
     bash build.sh release
     cp TrebleApp.apk ../vendor/hardware_overlay/TrebleApp/app.apk
     cd ..
-    echo
+    log_success "Treble app built"
 }
-
 
 buildVariant() {
-    echo "--> Building $1"
-    lunch "$1"-bp2a-userdebug
-    make -j$(nproc --all) installclean
-    make -j$(nproc --all) systemimage
-    make -j$(nproc --all) target-files-package otatools
-    bash $BUILD_ROOT/sign.sh "../archfx-priv/keys" $OUT/signed-target_files.zip
-    unzip -jqo $OUT/signed-target_files.zip IMAGES/system.img -d $OUT
-    mv $OUT/system.img $BUILD_DIR/system-"$1".img
-
-    echo "image copied to $BUILD_DIR/system-"$1".img"
-    echo
-}
-
-buildVndkliteVariant() {
-    echo "--> Building $1-vndklite"
-    cd treble_adapter
-    sudo bash lite-adapter.sh "64" $BUILD_DIR/system-"$1".img
-    mv s.img $BUILD_DIR/system-"$1"-vndklite.img
-    sudo rm -rf d tmp
-    cd ..
-    echo
+    local variant="$1"
+    log_step "Building $variant"
+    lunch "$variant"-userdebug
+    make -j"$(nproc --all)" installclean > /dev/null 2>&1
+    make -j"$(nproc --all)" systemimage 2>&1 | tail -1
+    make -j"$(nproc --all)" target-files-package otatools 2>&1 | tail -1
+    bash "$BUILD_ROOT/sign.sh" "$BUILD_ROOT/signing-keys" "$OUT/signed-target_files.zip"
+    unzip -jqo "$OUT/signed-target_files.zip" IMAGES/system.img -d "$OUT"
+    mv "$OUT/system.img" "$BUILD_DIR/system-$variant.img"
+    log_success "Image: $BUILD_DIR/system-$variant.img"
 }
 
 buildVariants() {
-    # buildVariant treble_a64_bvN
-    # buildVariant treble_a64_bgN
-    
     buildVariant treble_arm64_bgN
     buildVariant treble_arm64_bvN
-    
-    
- 
-    # buildVndkliteVariant treble_a64_bvN
-    # buildVndkliteVariant treble_a64_bgN
-    # buildVndkliteVariant treble_arm64_bvN
-    # buildVndkliteVariant treble_arm64_bgN
 }
 
 generatePackages() {
-    echo "--> Generating packages"
-    buildDate="$(date +%Y%m%d)"
-    find $BUILD_DIR/ -name "system-treble_*.img" | while read file; do
-        filename="$(basename $file)"
+    log_step "Generating packages"
+    local buildDate="$(date +%Y%m%d)"
+    find "$BUILD_DIR/" -name "system-treble_*.img" | while read -r file; do
+        filename="$(basename "$file")"
         [[ "$filename" == *"_a64"* ]] && arch="arm32_binder64" || arch="arm64"
         [[ "$filename" == *"_bvN"* ]] && variant="vanilla" || variant="gapps"
-        [[ "$filename" == *"-vndklite"* ]] && vndk="-vndklite" || vndk=""
-        name="aosp-${arch}-ab-${variant}${vndk}-16.0-$buildDate"
-        xz -cv "$file" -T0 > $BUILD_DIR/"$name".img.xz
+        name="aosp-${arch}-ab-${variant}-16.0-$buildDate"
+        log_info "Compressing $name.img"
+        xz -cv "$file" -T0 > "$BUILD_DIR/$name.img.xz"
     done
-    rm -rf $BUILD_DIR/system-*.img
-    echo
+    rm -rf "$BUILD_DIR"/system-*.img
+    log_success "Packages generated"
 }
 
 generateOta() {
-    echo "--> Generating OTA file"
-    version="$(date +v%Y.%m.%d)"
-    buildDate="$(date +%Y%m%d)"
-    timestamp="$START"
-    json="{\"version\": \"$version\",\"date\": \"$timestamp\",\"variants\": ["
-    find $BUILD_DIR/ -name "aosp-*-16.0-$buildDate.img.xz" | sort | {
-        while read file; do
-            filename="$(basename $file)"
+    log_step "Generating OTA metadata"
+    local version="$(date +v%Y.%m.%d)"
+    local buildDate="$(date +%Y%m%d)"
+    local timestamp="$START"
+    local json="{\"version\": \"$version\",\"date\": \"$timestamp\",\"variants\": ["
+    find "$BUILD_DIR/" -name "aosp-*-16.0-$buildDate.img.xz" | sort | {
+        while read -r file; do
+            filename="$(basename "$file")"
             [[ "$filename" == *"-arm32"* ]] && arch="a64" || arch="arm64"
             [[ "$filename" == *"-vanilla"* ]] && variant="v" || variant="g"
-            [[ "$filename" == *"-vndklite"* ]] && vndk="-vndklite" || vndk=""
-            name="treble_${arch}_b${variant}N${vndk}"
-            size=$(wc -c $file | awk '{print $1}')
-            url="https://github.com/archfx/duo-de/releases/download/$version/$filename"
+            name="treble_${arch}_b${variant}N"
+            size=$(wc -c < "$file")
+            url="https://github.com/bariccattion/surface-duo-aosp/releases/download/$version/$filename"
             json="${json} {\"name\": \"$name\",\"size\": \"$size\",\"url\": \"$url\"},"
         done
         json="${json%?}]}"
-        echo "$json" | jq . > $BUILD_ROOT/config/ota.json
+        echo "$json" | jq . > "$BUILD_ROOT/config/ota.json"
     }
-    echo
+    log_success "OTA metadata generated"
 }
 
 uploadOTA() {
-    bash $BUILD_ROOT/upload.sh
+    bash "$BUILD_ROOT/upload.sh"
 }
-
-
 
 START=$(date +%s)
 
-# initRepos
-# syncRepos
-# applyPatches
-# setupEnv
-# buildTrebleApp
-# buildVariants
-# generatePackages
-# generateOta
-uploadOTA
+initRepos
+syncRepos
+applyPatches
+setupEnv
+buildTrebleApp
+buildVariants
+generatePackages
+generateOta
+# uploadOTA
 
 END=$(date +%s)
-ELAPSEDM=$(($(($END-$START))/60))
-ELAPSEDS=$(($(($END-$START))-$ELAPSEDM*60))
+ELAPSED=$((END - START))
+MINUTES=$((ELAPSED / 60))
+SECONDS=$((ELAPSED % 60))
 
-echo "--> Buildbot completed in $ELAPSEDM minutes and $ELAPSEDS seconds"
+echo
+echo -e "${GREEN}${BOLD}  Buildbot complete${NC} — ${MINUTES}m ${SECONDS}s"
 echo
