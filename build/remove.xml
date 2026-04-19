@@ -12,12 +12,7 @@
   <remove-project path="device/lineage/atv" />
   <remove-project path="device/lineage/car" />
 
-  <!-- Cuttlefish (default.xml) -->
-  <remove-project path="device/google/cuttlefish" />
-  <remove-project path="device/google/cuttlefish_prebuilts" />
-  <remove-project path="device/google/cuttlefish_vmm" />
-  <remove-project path="device/google/trout" />
-  <remove-project path="device/google/contexthub" />
+  <!-- Cuttlefish (default.xml) - kept for Virtualization/crosvm support -->
 
   <!-- ============================================================ -->
   <!-- Hardware vendors not used by Surface Duo (default.xml)        -->
