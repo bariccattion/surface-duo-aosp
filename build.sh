@@ -192,7 +192,7 @@ STEP_START=$(date +%s)
     while [ $SYNC_RETRY -lt $MAX_SYNC_RETRIES ]; do
         SYNC_RETRY=$((SYNC_RETRY + 1))
 
-        if repo sync -c --no-clone-bundle --no-tags --optimized-fetch --prune --force-sync -j"$SYNC_JOBS" --progress 2>&1 | tee /tmp/repo-sync.log; then
+        if repo sync -c --no-clone-bundle --no-tags --optimized-fetch --prune --force-sync -j"$SYNC_JOBS" 2>&1 | tee /tmp/repo-sync.log; then
             if grep -qiE "error:|failed:" /tmp/repo-sync.log; then
                 :
             else
