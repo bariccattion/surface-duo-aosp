@@ -1,12 +1,52 @@
-From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From e5f5ff74f8adf77c1a41f7c6f8a491a6d3154223 Mon Sep 17 00:00:00 2001
 From: Bariccatti <bariccatti@gmail.com>
 Date: Sat, 18 Apr 2026 12:00:00 -0400
 Subject: [PATCH] LineageOS Launcher3 dual-screen modifications
 
+---
+ src/com/android/launcher3/DeviceProfile.java  | 13 +++-
+ .../allapps/AllAppsTransitionController.java  | 22 +++++++
+ .../touch/WorkspaceTouchListener.java         | 51 +++++++++++++++
+ .../util/ActivityOptionsWrapper.java          | 64 +++++++++++++++++++
+ .../launcher3/views/ActivityContext.java      |  2 +
+ 5 files changed, 150 insertions(+), 2 deletions(-)
+
+diff --git a/src/com/android/launcher3/DeviceProfile.java b/src/com/android/launcher3/DeviceProfile.java
+index ac2b4ba..5ce5557 100644
+--- a/src/com/android/launcher3/DeviceProfile.java
++++ b/src/com/android/launcher3/DeviceProfile.java
+@@ -195,6 +195,9 @@ public class DeviceProfile {
+     // DragController
+     public int flingToDeleteThresholdVelocity;
+ 
++    // Settings
++    public boolean initialX = false; // false: left, true: right
++
+     // Meminfo in overview
+     public int memInfoHeight;
+ 
+@@ -577,8 +580,14 @@ public class DeviceProfile {
+         }
+ 
+         if (shouldShowAllAppsOnSheet(context)) {
+-            allAppsPadding.top = allAppsTopPadding;
+-            allAppsShiftRange = mDeviceProperties.getHeightPx() - allAppsTopPadding + mInsets.top;
++            float allAppsHeightScale = 0.7f;
++            int widthPx = mDeviceProperties.getWidthPx();
++            int heightPx = mDeviceProperties.getHeightPx();
++            if (widthPx > 2500) {
++                allAppsHeightScale = 0.95f;
++            }
++            allAppsPadding.top = (heightPx > 1400) ? ((int) Math.round(heightPx * (1 - allAppsHeightScale))) : allAppsTopPadding;
++            allAppsShiftRange = (heightPx > 1400) ? ((int) Math.round(heightPx * allAppsHeightScale)) : heightPx - allAppsTopPadding + mInsets.top;
+         } else {
+             allAppsPadding.top = 0;
+             allAppsShiftRange =
 diff --git a/src/com/android/launcher3/allapps/AllAppsTransitionController.java b/src/com/android/launcher3/allapps/AllAppsTransitionController.java
+index a68f0d7..1610269 100644
 --- a/src/com/android/launcher3/allapps/AllAppsTransitionController.java
 +++ b/src/com/android/launcher3/allapps/AllAppsTransitionController.java
-@@ -67,6 +67,11 @@
+@@ -67,6 +67,11 @@ import com.android.launcher3.views.ScrimView;
  
  import com.google.android.msdl.data.model.MSDLToken;
  
@@ -18,7 +58,7 @@ diff --git a/src/com/android/launcher3/allapps/AllAppsTransitionController.java 
  /**
   * Handles AllApps view transition.
   * 1) Slides all apps view using direct manipulation
-@@ -238,6 +243,23 @@
+@@ -238,6 +243,23 @@ public class AllAppsTransitionController
          }
  
          mShouldShowAllAppsOnSheet = dp.shouldShowAllAppsOnSheet(mLauncher);
@@ -42,40 +82,11 @@ diff --git a/src/com/android/launcher3/allapps/AllAppsTransitionController.java 
      }
  
      /**
-diff --git a/src/com/android/launcher3/DeviceProfile.java b/src/com/android/launcher3/DeviceProfile.java
---- a/src/com/android/launcher3/DeviceProfile.java
-+++ b/src/com/android/launcher3/DeviceProfile.java
-@@ -195,6 +195,9 @@
-     // DragController
-     public int flingToDeleteThresholdVelocity;
- 
-+    // Settings
-+    public boolean initialX = false; // false: left, true: right
-+
-     // Meminfo in overview
-     public int memInfoHeight;
- 
-@@ -577,8 +580,14 @@
-         }
- 
-         if (shouldShowAllAppsOnSheet(context)) {
--            allAppsPadding.top = allAppsTopPadding;
--            allAppsShiftRange = mDeviceProperties.getHeightPx() - allAppsTopPadding + mInsets.top;
-+            float allAppsHeightScale = 0.7f;
-+            int widthPx = mDeviceProperties.getWidthPx();
-+            int heightPx = mDeviceProperties.getHeightPx();
-+            if (widthPx > 2500) {
-+                allAppsHeightScale = 0.95f;
-+            }
-+            allAppsPadding.top = (heightPx > 1400) ? ((int) Math.round(heightPx * (1 - allAppsHeightScale))) : allAppsTopPadding;
-+            allAppsShiftRange = (heightPx > 1400) ? ((int) Math.round(heightPx * allAppsHeightScale)) : heightPx - allAppsTopPadding + mInsets.top;
-         } else {
-             allAppsPadding.top = 0;
-             allAppsShiftRange =
 diff --git a/src/com/android/launcher3/touch/WorkspaceTouchListener.java b/src/com/android/launcher3/touch/WorkspaceTouchListener.java
+index 423e9cc..dc7f429 100644
 --- a/src/com/android/launcher3/touch/WorkspaceTouchListener.java
 +++ b/src/com/android/launcher3/touch/WorkspaceTouchListener.java
-@@ -52,6 +52,16 @@
+@@ -52,6 +52,16 @@ import com.android.launcher3.testing.shared.TestProtocol;
  import com.android.launcher3.util.TouchUtil;
  import com.android.launcher3.util.VibratorWrapper;
  
@@ -92,7 +103,7 @@ diff --git a/src/com/android/launcher3/touch/WorkspaceTouchListener.java b/src/c
  /**
   * Helper class to handle touch on empty space in workspace and show options popup on long press
   */
-@@ -97,6 +107,10 @@
+@@ -97,6 +107,10 @@ public class WorkspaceTouchListener extends GestureDetector.SimpleOnGestureListe
              // Check if we can handle long press.
              boolean handleLongPress = canHandleLongPress();
  
@@ -103,7 +114,7 @@ diff --git a/src/com/android/launcher3/touch/WorkspaceTouchListener.java b/src/c
              if (handleLongPress) {
                  // Check if the event is not near the edges
                  DeviceProfile dp = mLauncher.getDeviceProfile();
-@@ -192,6 +206,43 @@
+@@ -192,6 +206,43 @@ public class WorkspaceTouchListener extends GestureDetector.SimpleOnGestureListe
                  && mLauncher.isInState(NORMAL);
      }
  
@@ -148,9 +159,10 @@ diff --git a/src/com/android/launcher3/touch/WorkspaceTouchListener.java b/src/c
          mLongPressState = STATE_CANCELLED;
      }
 diff --git a/src/com/android/launcher3/util/ActivityOptionsWrapper.java b/src/com/android/launcher3/util/ActivityOptionsWrapper.java
+index 17ff2a9..2dd0313 100644
 --- a/src/com/android/launcher3/util/ActivityOptionsWrapper.java
 +++ b/src/com/android/launcher3/util/ActivityOptionsWrapper.java
-@@ -16,9 +16,21 @@
+@@ -16,8 +16,21 @@
  package com.android.launcher3.util;
  
  
@@ -158,7 +170,8 @@ diff --git a/src/com/android/launcher3/util/ActivityOptionsWrapper.java b/src/co
 +
  import android.app.ActivityOptions;
  import android.os.Bundle;
- 
++import android.util.DisplayMetrics;
++
 +import com.android.launcher3.LauncherFiles;
 +import android.os.Build;
 +import android.graphics.Rect;
@@ -168,11 +181,10 @@ diff --git a/src/com/android/launcher3/util/ActivityOptionsWrapper.java b/src/co
 +import com.android.launcher3.DeviceProfile;
 +import com.android.launcher3.views.ActivityContext;
 +import com.android.launcher3.Launcher;
-+
+ 
  /**
   * A wrapper around {@link ActivityOptions} to allow custom functionality in launcher
-  */
-@@ -28,6 +40,8 @@
+@@ -28,6 +41,8 @@ public class ActivityOptionsWrapper {
      // Called when the app launch animation is complete
      public final RunnableList onEndCallback;
  
@@ -181,14 +193,15 @@ diff --git a/src/com/android/launcher3/util/ActivityOptionsWrapper.java b/src/co
      public ActivityOptionsWrapper(ActivityOptions options, RunnableList onEndCallback) {
          this.options = options;
          this.onEndCallback = onEndCallback;
-@@ -37,6 +51,54 @@
+@@ -37,6 +52,55 @@ public class ActivityOptionsWrapper {
       * @see {@link ActivityOptions#toBundle()}
       */
      public Bundle toBundle() {
 +        String mode = "freeform";
 +        int windowMode;
-+        Boolean isTabletMode = ActivityContext.lookupContext(this.context).getDeviceProfile().isTablet;
-+        int widthPx = ActivityContext.lookupContext(this.context).getDeviceProfile().mDeviceProperties.getWidthPx();
++        DisplayMetrics dm = this.context.getResources().getDisplayMetrics();
++        int widthPx = dm.widthPixels;
++        Boolean isTabletMode = (widthPx > 1400);
 +        Boolean initialX = ActivityContext.lookupContext(this.context).getDeviceProfile().initialX;
 +
 +        int xValue = (initialX == true && isTabletMode && widthPx > 2500) ? 1394 : 50;
@@ -237,9 +250,10 @@ diff --git a/src/com/android/launcher3/util/ActivityOptionsWrapper.java b/src/co
 +    }
  }
 diff --git a/src/com/android/launcher3/views/ActivityContext.java b/src/com/android/launcher3/views/ActivityContext.java
+index f8cba75..fb6af8e 100644
 --- a/src/com/android/launcher3/views/ActivityContext.java
 +++ b/src/com/android/launcher3/views/ActivityContext.java
-@@ -468,6 +468,8 @@
+@@ -468,6 +468,8 @@ public interface ActivityContext extends SavedStateRegistryOwner {
      default RunnableList sendPendingIntentWithAnimation(
              @NonNull View v, PendingIntent intent, @Nullable ItemInfo item) {
          ActivityOptionsWrapper options = getActivityLaunchOptions(v, item);
@@ -248,6 +262,6 @@ diff --git a/src/com/android/launcher3/views/ActivityContext.java b/src/com/andr
          try {
              intent.send(null, 0, null, null, null, null, options.toBundle());
              if (item != null) {
-
 -- 
 2.34.1
+
