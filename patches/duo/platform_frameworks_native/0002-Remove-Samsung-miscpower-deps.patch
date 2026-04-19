@@ -1,21 +1,18 @@
-From 83f459522513ddcee0068ba39b845935468768c0 Mon Sep 17 00:00:00 2001
+From eebad9963f212b559895e178cf7482ecb098f794 Mon Sep 17 00:00:00 2001
 From: Surface Duo Builder <bariccatti@gmail.com>
-Date: Sun, 19 Apr 2026 20:20:35 +0000
+Date: Sun, 19 Apr 2026 20:35:43 +0000
 Subject: [PATCH] Remove Samsung miscpower HIDL from powermanager and
  surfaceflinger
 
-Strip vendor.samsung.hardware.miscpower@2.0 deps, remove
-HidlHalWrapperSeh class and all Samsung-specific power HAL code.
-Surface Duo does not have Samsung hardware.
 ---
  include/powermanager/PowerHalLoader.h         |  3 -
  include/powermanager/PowerHalWrapper.h        | 35 +----------
  services/powermanager/Android.bp              |  2 -
- services/powermanager/PowerHalController.cpp  |  3 -
+ services/powermanager/PowerHalController.cpp  |  7 +--
  services/powermanager/PowerHalLoader.cpp      |  8 ---
  services/powermanager/PowerHalWrapper.cpp     | 62 -------------------
  .../CompositionEngine/Android.bp              |  1 -
- 7 files changed, 2 insertions(+), 112 deletions(-)
+ 7 files changed, 3 insertions(+), 115 deletions(-)
 
 diff --git a/include/powermanager/PowerHalLoader.h b/include/powermanager/PowerHalLoader.h
 index 32cc39b..ab66336 100644
@@ -133,7 +130,7 @@ index ef01e13..78f8f7b 100644
  
      whole_static_libs: [
 diff --git a/services/powermanager/PowerHalController.cpp b/services/powermanager/PowerHalController.cpp
-index ac1f88c..f8b364b 100644
+index ac1f88c..4ad15f7 100644
 --- a/services/powermanager/PowerHalController.cpp
 +++ b/services/powermanager/PowerHalController.cpp
 @@ -20,7 +20,6 @@
@@ -144,22 +141,25 @@ index ac1f88c..f8b364b 100644
  #include <powermanager/PowerHalController.h>
  #include <powermanager/PowerHalLoader.h>
  #include <utils/Log.h>
-@@ -34,7 +33,6 @@ namespace power {
+@@ -34,17 +33,13 @@ namespace power {
  // -------------------------------------------------------------------------------------------------
  
  std::unique_ptr<HalWrapper> HalConnector::connect() {
 -    sp<vendor::samsung::hardware::miscpower::V2_0::ISehMiscPower> halHidlSeh = PowerHalLoader::loadHidlSeh();
      if (std::shared_ptr<aidl::android::hardware::power::IPower> halAidl =
                  PowerHalLoader::loadAidl()) {
-         return std::make_unique<AidlHalWrapper>(halAidl, halHidlSeh);
-@@ -43,7 +41,6 @@ std::unique_ptr<HalWrapper> HalConnector::connect() {
+-        return std::make_unique<AidlHalWrapper>(halAidl, halHidlSeh);
++        return std::make_unique<AidlHalWrapper>(halAidl);
+     }
+     // If V1_0 isn't defined, none of them are
      sp<V1_0::IPower> halHidlV1_0 = PowerHalLoader::loadHidlV1_0();
      sp<V1_1::IPower> halHidlV1_1 = PowerHalLoader::loadHidlV1_1();
-     if (halHidlSeh) {
+-    if (halHidlSeh) {
 -        return std::make_unique<HidlHalWrapperSeh>(halHidlSeh, halHidlV1_1, halHidlV1_0);
-     }
+-    }
      if (halHidlV1_0) {
          if (sp<V1_3::IPower> halHidlV1_3 = PowerHalLoader::loadHidlV1_3()) {
+             return std::make_unique<HidlHalWrapperV1_3>(halHidlV1_3);
 diff --git a/services/powermanager/PowerHalLoader.cpp b/services/powermanager/PowerHalLoader.cpp
 index 2f5a857..3004724 100644
 --- a/services/powermanager/PowerHalLoader.cpp
