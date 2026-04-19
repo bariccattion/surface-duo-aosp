@@ -51,10 +51,10 @@ for project in "${PROJECTS[@]}"; do
 
     local_p="$(echo "$project" | tr '_' '/' | sed -e 's;platform/;;g')"
     [ "$local_p" == "build" ] && local_p="build/make"
-    [ "$local_p" == "device_phh_treble" ] && local_p="device/phh/treble"
-    [ "$local_p" == "system_sepolicy" ] && local_p="system/sepolicy"
-    [ "$local_p" == "treble_app" ] && local_p="treble_app"
-    [ "$local_p" == "vendor_hardware_overlay" ] && local_p="vendor/hardware_overlay"
+    [ "$local_p" == "device/phh/treble" ] && local_p="device/phh/treble"
+    [ "$local_p" == "system/sepolicy" ] && local_p="system/sepolicy"
+    [ "$local_p" == "treble/app" ] && local_p="treble_app"
+    [ "$local_p" == "vendor/hardware/overlay" ] && local_p="vendor/hardware_overlay"
 
     if [ ! -d "$local_p" ]; then
         echo -e "    ${DIM}[$PROJ_NUM/$TOTAL_PROJECTS]${NC} ${YELLOW}SKIP${NC}  $local_p (not found)"

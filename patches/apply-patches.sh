@@ -60,11 +60,11 @@ apply_patch_set() {
 
         local p="$(echo "$project_name" | tr '_' '/' | sed -e 's;platform/;;g')"
         [ "$p" == "build" ] && p="build/make"
-        [ "$p" == "device_phh_treble" ] && p="device/phh/treble"
-        [ "$p" == "system_sepolicy" ] && p="system/sepolicy"
-        [ "$p" == "vendor_hardware_overlay" ] && p="vendor/hardware_overlay"
-        [ "$p" == "treble_app" ] && p="treble_app"
-        [ "$p" == "vendor_partner_gms" ] && p="vendor/partner_gms"
+        [ "$p" == "device/phh/treble" ] && p="device/phh/treble"
+        [ "$p" == "system/sepolicy" ] && p="system/sepolicy"
+        [ "$p" == "treble/app" ] && p="treble_app"
+        [ "$p" == "vendor/hardware/overlay" ] && p="vendor/hardware_overlay"
+        [ "$p" == "vendor/partner/gms" ] && p="vendor/partner_gms"
 
         local target_dir="$source_dir/$p"
         if [ ! -d "$target_dir" ]; then
@@ -93,7 +93,7 @@ apply_patch_set() {
             TOTAL_PATCHES=$((TOTAL_PATCHES + 1))
             local patch_name=$(basename "$patch_file")
 
-            if patch -f -p1 --dry-run -R "$patch_file" > /dev/null 2>&1; then
+            if patch -p1 --dry-run -R "$patch_file" > /dev/null 2>&1; then
                 echo -e "      ${DIM}[$patch_num/$total_patches]${NC} ${DIM}SKIP${NC}  $patch_name (already applied)"
                 SKIPPED=$((SKIPPED + 1))
                 continue
