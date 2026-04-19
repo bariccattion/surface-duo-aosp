@@ -24,7 +24,7 @@ new file mode 100644
 index 0000000000..1111111111
 --- /dev/null
 +++ b/app/src/main/java/me/phh/treble/app/Duo.kt
-@@ -0,0 +1,170 @@
+@@ -0,0 +1,212 @@
 +package me.phh.treble.app
 +
 +import android.content.Context
@@ -242,15 +242,16 @@ new file mode 100644
 index 0000000000..1111111111
 --- /dev/null
 +++ b/app/src/main/java/me/phh/treble/app/DuoSettings.kt
-@@ -0,0 +1,54 @@
+@@ -0,0 +1,55 @@
 +package me.phh.treble.app
 +
 +import android.content.Context
 +import android.os.Bundle
 +import android.os.SystemProperties
-+import androidx.preference.SwitchPreference
-+import androidx.preference.PreferenceCategory
-+import androidx.preference.ListPreference
++import android.preference.SwitchPreference
++import android.preference.PreferenceCategory
++import android.preference.ListPreference
++import android.preference.PreferenceFragment
 +import android.util.Log
 +
 +
@@ -266,35 +267,30 @@ index 0000000000..1111111111
 +    override fun enabled(context: Context) = (SystemProperties.get("ro.hardware", "N/A") == "surfaceduo" || SystemProperties.get("ro.hardware", "N/A") == "surfaceduo2")
 +}
 +
-+class DuoSettingsFragment : SettingsFragment() {
-+    override val preferencesResId = R.xml.pref_duo
-+
-+    override fun onCreatePreferences(savedInstanceState: Bundle?, rootKey: String?) {
-+        super.onCreatePreferences(savedInstanceState, rootKey)
-+        android.util.Log.d("PHH", "Loading duo fragment ${DuoSettings.enabled(context ?: activity!!)}")
++class DuoSettingsFragment : PreferenceFragment() {
++    override fun onCreate(savedInstanceState: Bundle?) {
++        super.onCreate(savedInstanceState)
++        addPreferencesFromResource(R.xml.pref_duo)
++        android.util.Log.d("PHH", "Loading duo fragment ${DuoSettings.enabled(activity ?: return)}")
 +
 +        val hardware = SystemProperties.get("ro.hardware", "N/A")
 +        if (hardware == "surfaceduo") {
-+            val wirelessPenChargingPref: SwitchPreference? = findPreference(DuoSettings.wirelessPenCharging)
-+            wirelessPenChargingPref?.let {
++            (findPreference(DuoSettings.wirelessPenCharging) as? SwitchPreference)?.let {
 +                preferenceScreen.removePreference(it)
 +                Log.d("PHH", "Wireless Pen Charging preference removed for hardware: $hardware")
 +            }
 +
-+            val chargePenOnlyWhenDeviceIsChargingPreference: SwitchPreference? = findPreference(DuoSettings.chargePenOnlyWhenDeviceIsCharging)
-+            chargePenOnlyWhenDeviceIsChargingPreference?.let {
++            (findPreference(DuoSettings.chargePenOnlyWhenDeviceIsCharging) as? SwitchPreference)?.let {
 +                preferenceScreen.removePreference(it)
 +                Log.d("PHH", "Wireless Pen Charger during device charge preference removed for hardware: $hardware")
 +            }
 +
-+            val penChargingPreferenceCategory: PreferenceCategory? = findPreference(DuoSettings.penChargingCategory)
-+            penChargingPreferenceCategory?.let{
++            (findPreference(DuoSettings.penChargingCategory) as? PreferenceCategory)?.let{
 +                preferenceScreen.removePreference(it)
 +                Log.d("PHH", "Removed Pen Charging category for hardware: $hardware")
 +            }
 +
-+            val peekModeHingeClockPositionPreference: ListPreference? = findPreference(DuoSettings.peekModeHingeClockPosition)
-+            peekModeHingeClockPositionPreference?.let{
++            (findPreference(DuoSettings.peekModeHingeClockPosition) as? ListPreference)?.let{
 +                preferenceScreen.removePreference(it)
 +                Log.d("PHH", "Peek Mode Hinge Clock preference removed for hardware: $hardware")
 +            }
@@ -310,18 +306,24 @@ index 0000000000..1111111111 100644
                  "key_doze_motorola" to DozeSettings.isMotorola(),
 +                "duo_settings" to DuoSettings.enabled(context),
                  "key_misc_root_access" to MiscSettings.isRoot(),
-                 )
+             )
+         }
+     }
+ 
 @@ -80,6 +81,7 @@ class EntryService : Service() {
              tryC { Xiaomi.startup(this) }
 +            tryC { Duo.startup(this) }
  
              // Telephony
+             tryC { Ims.startup(this) }
+             tryC { Telephony.startup(this) }
+ 
 diff --git a/app/src/main/java/me/phh/treble/app/MSPenCharger.kt b/app/src/main/java/me/phh/treble/app/MSPenCharger.kt
 new file mode 100644
 index 0000000000..1111111111
 --- /dev/null
 +++ b/app/src/main/java/me/phh/treble/app/MSPenCharger.kt
-@@ -0,0 +1,60 @@
+@@ -0,0 +1,76 @@
 +package me.phh.treble.app
 +
 +import android.service.quicksettings.TileService
@@ -403,15 +405,19 @@ index 0000000000..1111111111 100644
 --- a/app/src/main/java/me/phh/treble/app/SettingsActivity.kt
 +++ b/app/src/main/java/me/phh/treble/app/SettingsActivity.kt
 @@ -76,6 +76,7 @@ class SettingsActivity : AppCompatActivity() {
-                     "doze_settings" to "me.phh.treble.app.DozeSettingsFragment",
-+                    "duo_settings" to "me.phh.treble.app.DuoSettingsFragment",
-                     "mediatek_settings" to "me.phh.treble.app.MediatekSettingsFragment",
+                 "doze_settings" to "me.phh.treble.app.DozeSettingsFragment",
++                "duo_settings" to "me.phh.treble.app.DuoSettingsFragment",
+                 "mediatek_settings" to "me.phh.treble.app.MediatekSettingsFragment",
+                 "display_settings" to "me.phh.treble.app.DisplaySettingsFragment",
+                 "audio_settings" to "me.phh.treble.app.AudioSettingsFragment",
+                 "audiofx_settings" to "me.phh.treble.app.AudioEffectsFragment",
+                 "telephony_settings" to "me.phh.treble.app.TelephonySettingsFragment",
 diff --git a/app/src/main/res/values/arrays.xml b/app/src/main/res/values/arrays.xml
 new file mode 100644
 index 0000000000..1111111111
 --- /dev/null
 +++ b/app/src/main/res/values/arrays.xml
-@@ -0,0 +1,24 @@
+@@ -0,0 +1,23 @@
 +<?xml version="1.0" encoding="utf-8"?>
 +<resources>
 +    <string-array name="pref_posture_lock_entries">
@@ -440,7 +446,7 @@ new file mode 100644
 index 0000000000..1111111111
 --- /dev/null
 +++ b/app/src/main/res/xml/pref_duo.xml
-@@ -0,0 +1,44 @@
+@@ -0,0 +1,53 @@
 +<?xml version="1.0" encoding="utf-8"?>
 +<PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android">
 +    <PreferenceCategory android:title="Hinge Gap">
@@ -469,7 +475,7 @@ index 0000000000..1111111111
 +            android:summary="Allows pen charging when pen case is attached (drains more battery)."
 +        />
 +        <SwitchPreference
-+            android:deadline="false"
++            android:defaultValue="false"
 +            android:key="charge_pen_while_device_is_charging"
 +            android:title="Charge Pen only when device is plugged in"
 +            android:summary="Only charges the pen when the device is plugged in. Overrides the previous option."
@@ -498,7 +504,7 @@ diff --git a/app/src/main/res/xml/pref_headers.xml b/app/src/main/res/xml/pref_h
 index 0000000000..1111111111 100644
 --- a/app/src/main/res/xml/pref_headers.xml
 +++ b/app/src/main/res/xml/pref_headers.xml
-@@ -89,4 +89,9 @@
+@@ -89,4 +89,10 @@
              android:key="doze_settings"
              android:title="@string/title_doze"
              android:icon="@drawable/doze" />

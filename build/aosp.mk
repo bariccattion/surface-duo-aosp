@@ -30,7 +30,7 @@ INFINITY_MAINTAINER := Bariccatti
 INFINITY_BUILD_TYPE := UNOFFICIAL
 
 # Surface Duo vendor config (APN, overlays, bootanimation, Duo packages)
-$(call inherit-product, vendor/surface-duo/config/common.mk)
+$(call inherit-product, vendor/surface/config/common.mk)
 
 # OTA
 PRODUCT_SYSTEM_DEFAULT_PROPERTIES += \

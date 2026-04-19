@@ -1,41 +1,64 @@
 From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Bariccatti <bariccatti@gmail.com>
 Date: Sat, 18 Apr 2026 12:00:00 -0400
-Subject: [PATCH] DUO-DE Launcher3 dual-screen modifications
+Subject: [PATCH] LineageOS Launcher3 dual-screen modifications
 
-NOTE: This patch is specific to the LineageOS 23.2 Launcher3 codebase
-(https://github.com/LineageOS/android_packages_apps_Launcher3, branch lineage-23.2).
-Infinity X ships this fork via LFS. It will NOT apply to AOSP's Launcher3.
-Key differences: uses mDeviceProperties.getHeightPx()/getWidthPx() instead of
-direct fields, allAppsTopPadding, simpler ActivityOptionsWrapper, etc.
-All Apps drawer scales to partial height in spanned mode
-Left/right screen alignment based on touch position
-Freeform mode for app launching on dual-screen
----
- .../launcher3/DeviceProfile.java              | 13 ++-
- .../allapps/AllAppsTransitionController.java   | 27 ++++++
- .../launcher3/touch/WorkspaceTouchListener.java| 58 +++++++++++
- .../launcher3/util/ActivityOptionsWrapper.java | 64 +++++++++++++
- .../launcher3/views/ActivityContext.java        |  8 ++
- 5 files changed, 168 insertions(+), 2 deletions(-)
-
+diff --git a/src/com/android/launcher3/allapps/AllAppsTransitionController.java b/src/com/android/launcher3/allapps/AllAppsTransitionController.java
+--- a/src/com/android/launcher3/allapps/AllAppsTransitionController.java
++++ b/src/com/android/launcher3/allapps/AllAppsTransitionController.java
+@@ -67,6 +67,11 @@
+ 
+ import com.google.android.msdl.data.model.MSDLToken;
+ 
++import com.android.launcher3.R;
++import android.widget.FrameLayout;
++import android.view.ViewGroup;
++import android.widget.RelativeLayout;
++
+ /**
+  * Handles AllApps view transition.
+  * 1) Slides all apps view using direct manipulation
+@@ -238,6 +243,23 @@
+         }
+ 
+         mShouldShowAllAppsOnSheet = dp.shouldShowAllAppsOnSheet(mLauncher);
++
++        if (mLauncher.getStateManager().getState() == ALL_APPS) {
++            resetAllAppsMargins();
++        }
++    }
++
++    private void resetAllAppsMargins() {
++        ActivityAllAppsContainerView<Launcher> appsView = mLauncher.findViewById(R.id.apps_view);
++        View bottomSheetBg = mLauncher.findViewById(R.id.bottom_sheet_background);
++        FrameLayout.LayoutParams params = (FrameLayout.LayoutParams) appsView.getLayoutParams();
++        RelativeLayout.LayoutParams bgParams = (RelativeLayout.LayoutParams) bottomSheetBg.getLayoutParams();
++        params.width = ViewGroup.LayoutParams.MATCH_PARENT;
++        params.height = ViewGroup.LayoutParams.MATCH_PARENT;
++        bgParams.leftMargin = 0;
++        bgParams.rightMargin = 0;
++        appsView.setLayoutParams(params);
++        bottomSheetBg.setLayoutParams(bgParams);
+     }
+ 
+     /**
 diff --git a/src/com/android/launcher3/DeviceProfile.java b/src/com/android/launcher3/DeviceProfile.java
-index 1111111111..2222222222 100644
 --- a/src/com/android/launcher3/DeviceProfile.java
 +++ b/src/com/android/launcher3/DeviceProfile.java
-@@ -188,6 +188,9 @@ public class DeviceProfile {
+@@ -195,6 +195,9 @@
      // DragController
      public int flingToDeleteThresholdVelocity;
  
-+    // DUO-DE settings
++    // Settings
 +    public boolean initialX = false; // false: left, true: right
 +
-     /** Used only as an alternative to mocking when null values cannot be used. */
-     @VisibleForTesting
-     public DeviceProfile() {
-@@ -536,8 +539,14 @@ public class DeviceProfile {
+     // Meminfo in overview
+     public int memInfoHeight;
  
-         if (shouldShowAllAppsOnSheet()) {
+@@ -577,8 +580,14 @@
+         }
+ 
+         if (shouldShowAllAppsOnSheet(context)) {
 -            allAppsPadding.top = allAppsTopPadding;
 -            allAppsShiftRange = mDeviceProperties.getHeightPx() - allAppsTopPadding + mInsets.top;
 +            float allAppsHeightScale = 0.7f;
@@ -49,55 +72,12 @@ index 1111111111..2222222222 100644
          } else {
              allAppsPadding.top = 0;
              allAppsShiftRange =
-diff --git a/src/com/android/launcher3/allapps/AllAppsTransitionController.java b/src/com/android/launcher3/allapps/AllAppsTransitionController.java
-index 3333333333..4444444444 100644
---- a/src/com/android/launcher3/allapps/AllAppsTransitionController.java
-+++ b/src/com/android/launcher3/allapps/AllAppsTransitionController.java
-@@ -64,6 +64,13 @@ import com.android.launcher3.views.ScrimView;
- 
- import com.google.android.msdl.data.model.MSDLToken;
- 
-+import com.android.launcher3.R;
-+import android.widget.FrameLayout;
-+import android.view.ViewGroup;
-+import android.widget.RelativeLayout;
-+
-+import static com.android.launcher3.LauncherState.ALL_APPS;
-+
- /**
-  * Handles AllApps view transition.
-  * 1) Slides all apps view using direct manipulation
-@@ -224,6 +231,26 @@ public class AllAppsTransitionController
- 
-         mShouldShowAllAppsOnSheet = dp.shouldShowAllAppsOnSheet();
-+
-+        if (mLauncher.getStateManager().getState() == ALL_APPS) {
-+            resetAllAppsMargins();
-+        }
-     }
- 
-+    private void resetAllAppsMargins() {
-+        ActivityAllAppsContainerView<Launcher> appsView = mLauncher.findViewById(R.id.apps_view);
-+        View bottomSheetBg = mLauncher.findViewById(R.id.bottom_sheet_background);
-+        FrameLayout.LayoutParams params = (FrameLayout.LayoutParams) appsView.getLayoutParams();
-+        RelativeLayout.LayoutParams bgParams = (RelativeLayout.LayoutParams) bottomSheetBg.getLayoutParams();
-+        params.width = ViewGroup.LayoutParams.MATCH_PARENT;
-+        params.height = ViewGroup.LayoutParams.MATCH_PARENT;
-+        bgParams.leftMargin = 0;
-+        bgParams.rightMargin = 0;
-+        appsView.setLayoutParams(params);
-+        bottomSheetBg.setLayoutParams(bgParams);
-+    }
-+
-     /**
-      * Note this method should not be called outside this class. This is public because it is used
 diff --git a/src/com/android/launcher3/touch/WorkspaceTouchListener.java b/src/com/android/launcher3/touch/WorkspaceTouchListener.java
-index 5555555555..6666666666 100644
 --- a/src/com/android/launcher3/touch/WorkspaceTouchListener.java
 +++ b/src/com/android/launcher3/touch/WorkspaceTouchListener.java
-@@ -49,6 +49,16 @@ import com.android.launcher3.testing.TestLogging;
- import com.android.launcher3.testing.shared.TestProtocol;
+@@ -52,6 +52,16 @@
  import com.android.launcher3.util.TouchUtil;
+ import com.android.launcher3.util.VibratorWrapper;
  
 +import com.android.launcher3.allapps.ActivityAllAppsContainerView;
 +import com.android.launcher3.R;
@@ -112,7 +92,7 @@ index 5555555555..6666666666 100644
  /**
   * Helper class to handle touch on empty space in workspace and show options popup on long press
   */
-@@ -91,6 +101,10 @@ public class WorkspaceTouchListener extends GestureDetector.SimpleOnGestureListe
+@@ -97,6 +107,10 @@
              // Check if we can handle long press.
              boolean handleLongPress = canHandleLongPress();
  
@@ -123,7 +103,7 @@ index 5555555555..6666666666 100644
              if (handleLongPress) {
                  // Check if the event is not near the edges
                  DeviceProfile dp = mLauncher.getDeviceProfile();
-@@ -155,6 +169,50 @@ public class WorkspaceTouchListener extends GestureDetector.SimpleOnGestureListe
+@@ -192,6 +206,43 @@
                  && mLauncher.isInState(NORMAL);
      }
  
@@ -168,12 +148,11 @@ index 5555555555..6666666666 100644
          mLongPressState = STATE_CANCELLED;
      }
 diff --git a/src/com/android/launcher3/util/ActivityOptionsWrapper.java b/src/com/android/launcher3/util/ActivityOptionsWrapper.java
-index 7777777777..8888888888 100644
 --- a/src/com/android/launcher3/util/ActivityOptionsWrapper.java
 +++ b/src/com/android/launcher3/util/ActivityOptionsWrapper.java
-@@ -15,8 +15,21 @@
-  */
+@@ -16,9 +16,21 @@
  package com.android.launcher3.util;
+ 
  
 +import static com.android.launcher3.LauncherState.NORMAL;
 +
@@ -189,10 +168,11 @@ index 7777777777..8888888888 100644
 +import com.android.launcher3.DeviceProfile;
 +import com.android.launcher3.views.ActivityContext;
 +import com.android.launcher3.Launcher;
- 
++
  /**
   * A wrapper around {@link ActivityOptions} to allow custom functionality in launcher
-@@ -26,10 +39,69 @@ public class ActivityOptionsWrapper {
+  */
+@@ -28,6 +40,8 @@
      // Called when the app launch animation is complete
      public final RunnableList onEndCallback;
  
@@ -201,9 +181,7 @@ index 7777777777..8888888888 100644
      public ActivityOptionsWrapper(ActivityOptions options, RunnableList onEndCallback) {
          this.options = options;
          this.onEndCallback = onEndCallback;
-     }
- 
-     /**
+@@ -37,6 +51,54 @@
       * @see {@link ActivityOptions#toBundle()}
       */
      public Bundle toBundle() {
@@ -259,18 +237,17 @@ index 7777777777..8888888888 100644
 +    }
  }
 diff --git a/src/com/android/launcher3/views/ActivityContext.java b/src/com/android/launcher3/views/ActivityContext.java
-index 9999999999..aaaaaaaaaa 100644
 --- a/src/com/android/launcher3/views/ActivityContext.java
 +++ b/src/com/android/launcher3/views/ActivityContext.java
-@@ -390,6 +390,9 @@ public interface ActivityContext extends SavedStateRegistryOwner {
+@@ -468,6 +468,8 @@
      default RunnableList sendPendingIntentWithAnimation(
              @NonNull View v, PendingIntent intent, @Nullable ItemInfo item) {
          ActivityOptionsWrapper options = getActivityLaunchOptions(v, item);
-+
 +        Context context = (Context) this;
 +        options.setWrapperContext(context);
          try {
              intent.send(null, 0, null, null, null, null, options.toBundle());
              if (item != null) {
+
 -- 
 2.34.1

@@ -2,9 +2,6 @@ FROM ubuntu:22.04
 
 ARG DEBIAN_FRONTEND=noninteractive
 
-COPY . /aosp/surface-duo-aosp
-RUN ln -s /aosp/surface-duo-aosp/build.sh /usr/bin/fullbuild
-
 RUN sed -i 's|http://archive.ubuntu.com|http://mirror.math.princeton.edu/pub/ubuntu|g' /etc/apt/sources.list && \
     sed -i 's|http://security.ubuntu.com|http://mirror.math.princeton.edu/pub/ubuntu|g' /etc/apt/sources.list && \
     dpkg --add-architecture i386 && \
@@ -69,9 +66,12 @@ ENV LANG=en_US.UTF-8
 ENV LANGUAGE=en_US:en
 ENV LC_ALL=en_US.UTF-8
 
-RUN mkdir -p /aosp/source
+RUN mkdir -p /aosp/source /aosp/surface-duo-aosp
 
 VOLUME /aosp/source
+VOLUME /aosp/surface-duo-aosp
 
 USER root
 WORKDIR /aosp
+
+ENTRYPOINT ["bash", "/aosp/surface-duo-aosp/build.sh"]

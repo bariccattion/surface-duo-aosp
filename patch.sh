@@ -81,14 +81,14 @@ for project in "${PROJECTS[@]}"; do
         TOTAL=$((TOTAL + 1))
         patch_name="$(basename "$patch_file")"
 
-        if git am "$patch_file" > /dev/null 2>&1; then
+        if git am --ignore-whitespace "$patch_file" > /dev/null 2>&1; then
             echo -e "      ${DIM}[$local_num/$local_total]${NC} ${GREEN} OK ${NC}  $patch_name"
             APPLIED=$((APPLIED + 1))
         else
             git am --abort > /dev/null 2>&1 || true
             git checkout . > /dev/null 2>&1 || true
 
-            if git apply --check -R "$patch_file" > /dev/null 2>&1; then
+            if git apply --check --ignore-whitespace -R "$patch_file" > /dev/null 2>&1; then
                 echo -e "      ${DIM}[$local_num/$local_total]${NC} ${DIM}SKIP${NC}  $patch_name (already applied)"
                 SKIPPED=$((SKIPPED + 1))
             else

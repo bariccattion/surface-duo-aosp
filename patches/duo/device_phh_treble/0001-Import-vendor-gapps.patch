@@ -1,0 +1,26 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Surface Duo Builder <bariccatti@gmail.com>
+Date: Sun, 19 Apr 2026 00:00:00 +0000
+Subject: [PATCH 1/1] Import vendor/gapps directly from MindTheGapps
+
+gapps.mk expects vendor/gapps/config.mk which doesn't exist in MindTheGapps.
+Inherit arm64-vendor.mk directly instead (includes common-vendor.mk + arch packages).
+---
+ generate.sh | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/generate.sh b/generate.sh
+index e0b1f22..50912a8 100644
+--- a/generate.sh
++++ b/generate.sh
+@@ -27,7 +27,7 @@
+ 		optional_base=""
+ 				if [ "$apps" == "gapps" ];then
+ 					apps_suffix="g"
+-					apps_script='$(call inherit-product, device/phh/treble/gapps.mk)'
++					apps_script='$(call inherit-product, vendor/gapps/arm64/arm64-vendor.mk)'
+ 					apps_name="with GApps"
+ 				fi
+ 				if [ "$apps" == "gapps-go" ];then
+-- 
+2.34.1

@@ -39,30 +39,47 @@ live_run() {
     local desc="$1"
     shift
     local start=$(date +%s)
+    local rc=0
     if [ -t 1 ]; then
         echo -ne "  ${BLUE}[RUN ]${NC}    ${desc}..."
+        set +euo pipefail
         "$@" 2>&1 | while IFS= read -r line; do
             local now=$(date +%s)
             local s=$(( (now - start) % 60 ))
             local m=$(( (now - start) / 60 ))
             echo -ne "\r  ${BLUE}[RUN ]${NC}    ${desc} [${m}m${s}s] ${DIM}${line:0:120}${NC}\033[K"
         done
+        rc=${PIPESTATUS[0]:-0}
+        set -euo pipefail
         local now=$(date +%s)
         local s=$(( (now - start) % 60 ))
         local m=$(( (now - start) / 60 ))
-        echo -e "\r  ${GREEN}[OK]${NC}      ${desc} [${m}m${s}s]\033[K"
+        if [ $rc -eq 0 ]; then
+            echo -e "\r  ${GREEN}[OK]${NC}      ${desc} [${m}m${s}s]\033[K"
+        else
+            echo -e "\r  ${RED}[FAIL]${NC}    ${desc} [${m}m${s}s] (exit $rc)\033[K"
+            return $rc
+        fi
     else
         echo -e "  ${BLUE}[RUN ]${NC}    ${desc}..."
+        set +euo pipefail
         "$@" 2>&1 | while IFS= read -r line; do
             local now=$(date +%s)
             local s=$(( (now - start) % 60 ))
             local m=$(( (now - start) / 60 ))
             echo -e "  ${DIM}[${m}m${s}s]${NC} ${line:0:200}"
         done
+        rc=${PIPESTATUS[0]:-0}
+        set -euo pipefail
         local now=$(date +%s)
         local s=$(( (now - start) % 60 ))
         local m=$(( (now - start) / 60 ))
-        echo -e "  ${GREEN}[OK]${NC}      ${desc} [${m}m${s}s]"
+        if [ $rc -eq 0 ]; then
+            echo -e "  ${GREEN}[OK]${NC}      ${desc} [${m}m${s}s]"
+        else
+            echo -e "  ${RED}[FAIL]${NC}    ${desc} [${m}m${s}s] (exit $rc)"
+            return $rc
+        fi
     fi
 }
 
@@ -81,38 +98,38 @@ elapsed() {
 # Configuration
 # ----------------------------------------------------------------
 BUILD_ROOT="/aosp/surface-duo-aosp"
-BUILD_DIR="/aosp/surface-duo-aosp/builds"
+BUILD_DIR="/aosp/surface-duo-aosp/out"
 SOURCE_DIR="/aosp/source"
 INFINITY_MANIFEST_URL="https://github.com/ProjectInfinity-X/manifest"
 INFINITY_MANIFEST_BRANCH="16"
 PATCHES_DIR="$BUILD_ROOT/patches"
-KEYS_DIR="${KEYS_DIR:-/aosp/archfx-priv/keys}"
+KEYS_DIR="${KEYS_DIR:-/aosp/surface-duo-aosp/signing-keys}"
 
-SKIP_SYNC=false
 SKIP_PATCHES=false
 SKIP_SIGN=false
 SKIP_UPLOAD=false
 BUILD_GAPPS=true
 BUILD_VANILLA=true
+BUILD_JOBS="${BUILD_JOBS:-$(nproc --all)}"
 
 for arg in "$@"; do
     case "$arg" in
-        --skip-sync)    SKIP_SYNC=true ;;
         --skip-patches) SKIP_PATCHES=true ;;
         --skip-sign)    SKIP_SIGN=true ;;
         --skip-upload)  SKIP_UPLOAD=true ;;
         --gapps-only)   BUILD_VANILLA=false ;;
         --vanilla-only) BUILD_GAPPS=false ;;
+        -j*)            BUILD_JOBS="${arg#-j}" ;;
         --help|-h)
             echo "Usage: $0 [OPTIONS]"
             echo ""
             echo "Options:"
-            echo "  --skip-sync      Skip repo init and sync"
             echo "  --skip-patches   Skip patch application"
             echo "  --skip-sign      Skip signing step"
             echo "  --skip-upload    Skip upload/release step"
             echo "  --gapps-only     Build only gapps variant"
             echo "  --vanilla-only   Build only vanilla variant"
+            echo "  -j<N>            Set parallel job count"
             echo "  -h, --help       Show this help"
             exit 0
             ;;
@@ -135,7 +152,6 @@ echo -e "  Keys dir:     $KEYS_DIR"
 echo -e "  Working dir:  $(pwd)"
 echo -e "  Variants:     $([ "$BUILD_GAPPS" = true ] && echo -n "gapps ")$([ "$BUILD_VANILLA" = true ] && echo -n "vanilla")"
 echo
-echo -e "  Skip sync:    $SKIP_SYNC"
 echo -e "  Skip patches: $SKIP_PATCHES"
 echo -e "  Skip sign:    $SKIP_SIGN"
 echo -e "  Skip upload:  $SKIP_UPLOAD"
@@ -146,9 +162,8 @@ START_TOTAL=$(date +%s)
 # ----------------------------------------------------------------
 # Step 1: Init and Sync
 # ----------------------------------------------------------------
-if [ "$SKIP_SYNC" = false ]; then
-    log_step "Step 1/8: Initializing and syncing repos"
-    STEP_START=$(date +%s)
+log_step "Step 1/8: Initializing and syncing repos"
+STEP_START=$(date +%s)
 
     log_info "Initializing repo with Infinity X manifest (branch $INFINITY_MANIFEST_BRANCH)"
     cd "$SOURCE_DIR"
@@ -165,25 +180,35 @@ if [ "$SKIP_SYNC" = false ]; then
     [ -f "$BUILD_ROOT/build/remove.xml" ] && cp "$BUILD_ROOT/build/remove.xml" .repo/local_manifests/remove.xml
     log_success "Local manifests installed"
 
+    log_info "Resetting source tree before sync"
+    cd "$SOURCE_DIR"
+    repo forall -c 'git reset --hard && git clean -fdx' 2>/dev/null || true
+
     log_info "Syncing source tree (this takes 20-60+ minutes)..."
     MAX_SYNC_RETRIES=5
     SYNC_RETRY=0
-    SYNC_JOBS="$(nproc --all)"
+    SYNC_JOBS="$BUILD_JOBS"
 
     while [ $SYNC_RETRY -lt $MAX_SYNC_RETRIES ]; do
         SYNC_RETRY=$((SYNC_RETRY + 1))
 
-        if live_run "Repo sync (attempt $SYNC_RETRY, -j$SYNC_JOBS)" repo sync -c --no-clone-bundle --no-tags --optimized-fetch --prune --force-sync -j"$SYNC_JOBS"; then
-            break
+        if repo sync -c --no-clone-bundle --no-tags --optimized-fetch --prune --force-sync -j"$SYNC_JOBS" 2>&1 | tee /tmp/repo-sync.log; then
+            if grep -qiE "error:|failed:" /tmp/repo-sync.log; then
+                :
+            else
+                break
+            fi
         fi
 
         if [ $SYNC_RETRY -eq $MAX_SYNC_RETRIES ]; then
-            log_error "Repo sync failed after $MAX_SYNC_RETRIES attempts"
+            log_error "Repo sync failed after $MAX_SYNC_RETRIES attempts. Errors:"
+            grep -iE "error:|failed:" /tmp/repo-sync.log | tail -20
             exit 1
         fi
 
         WAIT=$((SYNC_RETRY * 30))
-        log_warn "Sync attempt $SYNC_RETRY/$MAX_SYNC_RETRIES had failures (likely rate limited)"
+        log_warn "Sync attempt $SYNC_RETRY/$MAX_SYNC_RETRIES had failures:"
+        grep -iE "error:|failed:" /tmp/repo-sync.log | tail -10
         log_info "Waiting ${WAIT}s before retry with fewer jobs..."
         sleep "$WAIT"
         SYNC_JOBS=4
@@ -194,10 +219,6 @@ if [ "$SKIP_SYNC" = false ]; then
 
     STEP_END=$(date +%s)
     log_success "Step 1 completed in $(elapsed $((STEP_END - STEP_START)))"
-else
-    log_warn "Skipping repo init/sync (--skip-sync)"
-    cd "$SOURCE_DIR"
-fi
 
 # ----------------------------------------------------------------
 # Step 2: Apply patches
@@ -278,7 +299,6 @@ log_info "Sourcing envsetup.sh from $SOURCE_DIR"
 cd "$SOURCE_DIR"
 set +euo pipefail
 . build/envsetup.sh
-set -euo pipefail
 log_success "Build environment ready"
 
 STEP_END=$(date +%s)
@@ -293,6 +313,7 @@ STEP_START=$(date +%s)
 build_variant() {
     local variant="$1"
     local variant_start=$(date +%s)
+    local log_file="$BUILD_DIR/build-${variant}-$(date +%Y%m%d-%H%M%S).log"
 
     echo
     log_info "=========================================="
@@ -303,14 +324,12 @@ build_variant() {
     lunch "$variant"-userdebug
 
     log_sub "Running installclean"
-    make -j"$(nproc --all)" installclean > /dev/null 2>&1
-
-    log_sub "Building system image (this takes 1-3+ hours)..."
-    live_run "make systemimage ($variant)" make -j"$(nproc --all)" systemimage
+    make -j"$BUILD_JOBS" installclean > /dev/null 2>&1
+    make -j"$BUILD_JOBS" systemimage 2>&1 | tee "$log_file"
 
     if [ "$SKIP_SIGN" = false ]; then
         log_sub "Building target-files-package"
-        live_run "make target-files ($variant)" make -j"$(nproc --all)" target-files-package otatools
+        make -j"$BUILD_JOBS" target-files-package otatools 2>&1 | tee -a "$log_file"
 
         log_sub "Signing target files"
         bash "$BUILD_ROOT/sign.sh" "$KEYS_DIR" "$OUT/signed-target_files.zip"
