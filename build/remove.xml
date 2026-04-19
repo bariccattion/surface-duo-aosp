@@ -132,12 +132,11 @@
   <remove-project path="packages/apps/FMRadio" />
   <remove-project path="packages/apps/FlipFlap" />
   <remove-project path="packages/apps/Jelly" />
-  <remove-project path="packages/apps/Recorder" />
+  <!-- Recorder is kept — common_mobile_full.mk adds it to PRODUCT_PACKAGES -->
 
   <!-- infinity.xml -->
-  <remove-project path="packages/apps/GameSpace" />
-  <remove-project path="packages/apps/FaceUnlock" />
-  <remove-project path="packages/apps/Updater" />
+  <!-- GameSpace, FaceUnlock, Updater are kept — common.mk adds them to PRODUCT_PACKAGES unconditionally -->
+  <remove-project path="vendor/google/gms" />
 
   <!-- ============================================================ -->
   <!-- Android Automotive OS (default.xml)                          -->

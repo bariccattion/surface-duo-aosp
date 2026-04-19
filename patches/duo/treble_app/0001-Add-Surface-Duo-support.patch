@@ -1,0 +1,512 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Bariccatti <bariccatti@gmail.com>
+Date: Sat, 18 Apr 2026 00:00:00 -0400
+Subject: [PATCH] Add Surface Duo support to treble app
+
+---
+ .../java/me/phh/treble/app/Duo.kt            | 170 ++++++++++++++++++
+ .../me/phh/treble/app/DuoSettings.kt          |  54 +++++
+ .../me/phh/treble/app/EntryService.kt         |   2 +
+ .../me/phh/treble/app/MSPenCharger.kt         |  60 ++++++
+ .../me/phh/treble/app/SettingsActivity.kt     |   1 +
+ .../main/res/values/arrays.xml                |  24 +++
+ .../main/res/xml/pref_duo.xml                 |  44 +++++
+ .../main/res/xml/pref_headers.xml             |   5 +
+ 8 files changed, 360 insertions(+)
+ create mode 100644 app/src/main/java/me/phh/treble/app/Duo.kt
+ create mode 100644 app/src/main/java/me/phh/treble/app/DuoSettings.kt
+ create mode 100644 app/src/main/java/me/phh/treble/app/MSPenCharger.kt
+ create mode 100644 app/src/main/res/values/arrays.xml
+ create mode 100644 app/src/main/res/xml/pref_duo.xml
+
+diff --git a/app/src/main/java/me/phh/treble/app/Duo.kt b/app/src/main/java/me/phh/treble/app/Duo.kt
+new file mode 100644
+index 0000000000..1111111111
+--- /dev/null
++++ b/app/src/main/java/me/phh/treble/app/Duo.kt
+@@ -0,0 +1,170 @@
++package me.phh.treble.app
++
++import android.content.Context
++import android.content.SharedPreferences
++import android.preference.PreferenceManager
++import android.util.Log
++import android.content.Intent
++import android.content.IntentFilter
++import java.io.File
++import java.lang.Exception
++import me.phh.treble.app.MSPenCharger
++import me.phh.treble.app.WirelessPenChargerBroadcastReceiver
++import android.os.ServiceManager
++import android.os.RemoteException
++import android.os.SystemProperties
++import androidx.preference.SwitchPreference
++import android.os.BatteryManager;
++import android.widget.Toast;
++
++object Duo: EntryStartup {
++    var ctxt: Context? = null
++    private var isDuo2: Boolean = false
++    private var penChargerBroadcastReceiver: WirelessPenChargerBroadcastReceiver? = null
++    private var penChargerIntentFilter: IntentFilter? = null
++
++    val spListener = SharedPreferences.OnSharedPreferenceChangeListener { sp, key ->
++        when(key) {
++            DuoSettings.disableHingeGap -> {
++                val b = sp.getBoolean(key, false)
++                val value = if(b) "1" else "0"
++                Misc.safeSetprop("persist.sys.phh.duo.disable_hinge", value)
++            }
++
++            DuoSettings.lockSingleScreenPosture -> {
++                val value = sp.getString(key, "dynamic")
++                when(value) {
++                    "dynamic" -> {
++                        Misc.safeSetprop("persist.sys.phh.duo.posture_lock", "0")
++                    }
++                    "right" -> {
++                        Misc.safeSetprop("persist.sys.phh.duo.posture_lock", "1")
++                    }
++                    "left" -> {
++                        Misc.safeSetprop("persist.sys.phh.duo.posture_lock", "2")
++                    }
++                    else -> {
++                        Misc.safeSetprop("persist.sys.phh.duo.posture_lock", "0")
++                    }
++                }
++
++            }
++
++            DuoSettings.wirelessPenCharging -> {
++                val b = sp.getBoolean(key, false)
++                val value = if(b) "1" else "0"
++                Misc.safeSetprop("persist.sys.phh.duo.pen_charger_enabled", value)
++
++                val chargeWhenPluggedIn : Boolean = SystemProperties.get("persist.sys.phh.duo.charge_pen_when_device_charging", "0") == "1"
++                if (isDuo2 && !chargeWhenPluggedIn) {
++                    when (b) {
++                        true -> {
++                            val result = MSPenCharger.turnOnPenCharger()
++                            if (result == 0) {
++                                Log.d("PHH", "Pen charger started successfully")
++                            } else {
++                                Log.e("PHH", "Failed to start pen charger (error code: $result)")
++                            }
++                        }
++                        false -> {
++                            val result = MSPenCharger.turnOffPenCharger()
++                            if (result == 0) {
++                                Log.d("PHH", "Pen charger stopped successfully")
++                            } else {
++                                Log.e("PHH", "Failed to stop pen charger (error code: $result)")
++                            }
++                        }
++                    }
++                }
++
++                if(chargeWhenPluggedIn){
++                    Toast.makeText(this.ctxt, "Pen will not charge while charge with device option is enabled!", Toast.LENGTH_SHORT)
++                }
++            }
++
++            DuoSettings.chargePenOnlyWhenDeviceIsCharging -> {
++                val b = sp.getBoolean(key, false)
++                val value = if(b) "1" else "0"
++                Misc.safeSetprop("persist.sys.phh.duo.charge_pen_when_device_charging", value)
++                if (isDuo2) {
++                    when (b) {
++                        true -> {
++                            setupBroadcastListener()
++
++                            if(isDeviceCharging()){
++                                MSPenCharger.turnOnPenCharger()
++                            }
++                            else{
++                                MSPenCharger.turnOffPenCharger()
++                            }
++                        }
++                        false -> {
++                            destroyBroadcastListener()
++
++                            if(SystemProperties.get("persist.sys.phh.duo.pen_charger_enabled", "0") == "1"){
++                                MSPenCharger.turnOnPenCharger()
++                            }
++                            else{
++                                MSPenCharger.turnOffPenCharger()
++                            }
++                        }
++                    }
++                }
++            }
++
++            DuoSettings.peekModeEnabled -> {
++                val b = sp.getBoolean(key, false)
++                val value = if(b) "1" else "0"
++                Misc.safeSetprop("persist.sys.phh.duo.peek_mode_enabled", value)
++            }
++
++            DuoSettings.peekModeHingeClockPosition -> {
++                val value = sp.getString(key, "center")
++                when(value) {
++                    "center" -> {
++                        Misc.safeSetprop("persist.sys.phh.duo.peek_mode_hinge_clock_position", "0")
++                    }
++                    "top" -> {
++                        Misc.safeSetprop("persist.sys.phh.duo.peek_mode_hinge_clock_position", "1")
++                    }
++                    "bottom" -> {
++                        Misc.safeSetprop("persist.sys.phh.duo.peek_mode_hinge_clock_position", "2")
++                    }
++                    else -> {
++                        Misc.safeSetprop("persist.sys.phh.duo.peek_mode_hinge_clock_position", "0")
++                    }
++                }
++
++            }
++        }
++    }
++
++    private fun setupBroadcastListener() {
++        try{
++            if(penChargerBroadcastReceiver != null){
++                this.ctxt?.unregisterReceiver(penChargerBroadcastReceiver)
++            }
++        } catch (e: IllegalArgumentException){
++        }
++
++        penChargerBroadcastReceiver = WirelessPenChargerBroadcastReceiver()
++
++        penChargerIntentFilter = IntentFilter().also{ intentFilter ->
++            intentFilter.addAction("android.intent.action.ACTION_POWER_CONNECTED")
++            intentFilter.addAction("android.intent.action.ACTION_POWER_DISCONNECTED")
++            this.ctxt?.registerReceiver(penChargerBroadcastReceiver, intentFilter)
++            Log.d("PHH", "Broadcast Receiver registered for pen charger!")
++        }
++    }
++
++    private fun destroyBroadcastListener(){
++        try{
++            penChargerBroadcastReceiver?.let{
++                this.ctxt?.unregisterReceiver(it)
++                Log.d("PHH", "Broadcast Receiver unregistered for pen charger!")
++            }
++        } catch (e: IllegalArgumentException){
++        }
++
++    }
++
++    private fun isDeviceCharging() : Boolean {
++        var batteryManager : BatteryManager = ctxt?.getSystemService(Context.BATTERY_SERVICE) as BatteryManager
++        return batteryManager.isCharging();
++    }
++
++    override fun startup(ctxt: Context) {
++        if(!DuoSettings.enabled(ctxt)) return
++        Log.d("PHH", "Starting Duo service")
++        val sp = PreferenceManager.getDefaultSharedPreferences(ctxt)
++        sp.registerOnSharedPreferenceChangeListener(spListener)
++
++        val hardware = SystemProperties.get("ro.hardware", "N/A")
++        if (hardware == "surfaceduo2") {
++            isDuo2 = true
++        }
++
++        this.ctxt = ctxt.applicationContext
++
++        if(isDuo2){
++            val chargeWhenPluggedIn : Boolean = SystemProperties.get("persist.sys.phh.duo.charge_pen_when_device_charging", "0") == "1"
++            val penChargerEnabled : Boolean = SystemProperties.get("persist.sys.phh.duo.pen_charger_enabled", "0") == "1"
++            if(chargeWhenPluggedIn){
++                setupBroadcastListener()
++
++                if(isDeviceCharging()){
++                    MSPenCharger.turnOnPenCharger()
++                }
++                else{
++                    MSPenCharger.turnOffPenCharger()
++                }
++            }
++
++            if(penChargerEnabled && !chargeWhenPluggedIn){
++                MSPenCharger.turnOnPenCharger()
++            }
++
++            if(!penChargerEnabled && !chargeWhenPluggedIn){
++                MSPenCharger.turnOffPenCharger()
++            }
++        }
++    }
++}
+diff --git a/app/src/main/java/me/phh/treble/app/DuoSettings.kt b/app/src/main/java/me/phh/treble/app/DuoSettings.kt
+new file mode 100644
+index 0000000000..1111111111
+--- /dev/null
++++ b/app/src/main/java/me/phh/treble/app/DuoSettings.kt
+@@ -0,0 +1,54 @@
++package me.phh.treble.app
++
++import android.content.Context
++import android.os.Bundle
++import android.os.SystemProperties
++import androidx.preference.SwitchPreference
++import androidx.preference.PreferenceCategory
++import androidx.preference.ListPreference
++import android.util.Log
++
++
++object DuoSettings : Settings {
++    val disableHingeGap = "key_disable_hinge_gap"
++    val lockSingleScreenPosture = "key_duo_posture_lock"
++    val penChargingCategory = "key_duo_pen_charging_category"
++    val wirelessPenCharging = "wireless_pen_charging"
++    val chargePenOnlyWhenDeviceIsCharging = "charge_pen_while_device_is_charging"
++    val peekModeEnabled = "key_duo_show_peek_overlay"
++    val peekModeHingeClockPosition = "key_duo_hinge_clock_peek_location"
++
++    override fun enabled(context: Context) = (SystemProperties.get("ro.hardware", "N/A") == "surfaceduo" || SystemProperties.get("ro.hardware", "N/A") == "surfaceduo2")
++}
++
++class DuoSettingsFragment : SettingsFragment() {
++    override val preferencesResId = R.xml.pref_duo
++
++    override fun onCreatePreferences(savedInstanceState: Bundle?, rootKey: String?) {
++        super.onCreatePreferences(savedInstanceState, rootKey)
++        android.util.Log.d("PHH", "Loading duo fragment ${DuoSettings.enabled(context ?: activity!!)}")
++
++        val hardware = SystemProperties.get("ro.hardware", "N/A")
++        if (hardware == "surfaceduo") {
++            val wirelessPenChargingPref: SwitchPreference? = findPreference(DuoSettings.wirelessPenCharging)
++            wirelessPenChargingPref?.let {
++                preferenceScreen.removePreference(it)
++                Log.d("PHH", "Wireless Pen Charging preference removed for hardware: $hardware")
++            }
++
++            val chargePenOnlyWhenDeviceIsChargingPreference: SwitchPreference? = findPreference(DuoSettings.chargePenOnlyWhenDeviceIsCharging)
++            chargePenOnlyWhenDeviceIsChargingPreference?.let {
++                preferenceScreen.removePreference(it)
++                Log.d("PHH", "Wireless Pen Charger during device charge preference removed for hardware: $hardware")
++            }
++
++            val penChargingPreferenceCategory: PreferenceCategory? = findPreference(DuoSettings.penChargingCategory)
++            penChargingPreferenceCategory?.let{
++                preferenceScreen.removePreference(it)
++                Log.d("PHH", "Removed Pen Charging category for hardware: $hardware")
++            }
++
++            val peekModeHingeClockPositionPreference: ListPreference? = findPreference(DuoSettings.peekModeHingeClockPosition)
++            peekModeHingeClockPositionPreference?.let{
++                preferenceScreen.removePreference(it)
++                Log.d("PHH", "Peek Mode Hinge Clock preference removed for hardware: $hardware")
++            }
++        }
++    }
++
++}
+diff --git a/app/src/main/java/me/phh/treble/app/EntryService.kt b/app/src/main/java/me/phh/treble/app/EntryService.kt
+index 0000000000..1111111111 100644
+--- a/app/src/main/java/me/phh/treble/app/EntryService.kt
++++ b/app/src/main/java/me/phh/treble/app/EntryService.kt
+@@ -67,6 +67,7 @@ class EntryService : Service() {
+                 "key_doze_motorola" to DozeSettings.isMotorola(),
++                "duo_settings" to DuoSettings.enabled(context),
+                 "key_misc_root_access" to MiscSettings.isRoot(),
+@@ -110,6 +111,7 @@ class EntryService : Service() {
+             tryC { Xiaomi.startup(this) }
++            tryC { Duo.startup(this) }
+ 
+             // Telephony
+diff --git a/app/src/main/java/me/phh/treble/app/MSPenCharger.kt b/app/src/main/java/me/phh/treble/app/MSPenCharger.kt
+new file mode 100644
+index 0000000000..1111111111
+--- /dev/null
++++ b/app/src/main/java/me/phh/treble/app/MSPenCharger.kt
+@@ -0,0 +1,60 @@
++package me.phh.treble.app
++
++import android.service.quicksettings.TileService
++import android.content.BroadcastReceiver
++import android.content.Intent
++import android.content.Context
++import android.os.SystemProperties
++import android.util.Log
++
++object MSPenCharger {
++    init {
++        System.loadLibrary("ms_pen_charger")
++    }
++
++    @JvmStatic
++    external fun turnOnPenCharger(): Int
++
++    @JvmStatic
++    external fun turnOffPenCharger(): Int
++
++    @JvmStatic
++    external fun readPenCharger(): Int
++}
++
++class MsPENTileService: TileService() {
++
++    override fun onTileAdded() {
++      super.onTileAdded()
++    }
++    override fun onStartListening() {
++      super.onStartListening()
++    }
++
++    override fun onStopListening() {
++      super.onStopListening()
++    }
++
++    override fun onClick() {
++      super.onClick()
++    }
++    override fun onTileRemoved() {
++      super.onTileRemoved()
++    }
++  }
++
++
++public class WirelessPenChargerBroadcastReceiver: BroadcastReceiver() {
++  private var isDuo2: Boolean = false
++
++  companion object {
++    const val TAG = "WIRELESS PEN CHARGER"
++  }
++
++  override fun onReceive(context: Context, intent: Intent){
++    val action: String? = intent.getAction()
++    isDuo2 = SystemProperties.get("ro.hardware", "N/A") == "surfaceduo2"
++
++    Log.d(TAG, "Received intent! Broadcaster should be working as expected. Action:" + action)
++
++    if(!isDuo2){
++      Log.d(TAG, "Exiting as this device is not a duo 2")
++      return
++    }
++
++    when(action){
++      "android.intent.action.ACTION_POWER_CONNECTED" -> {
++        MSPenCharger.turnOnPenCharger()
++        Log.d(TAG, "Pen Charger turned on from plugged in event.")
++      }
++      "android.intent.action.ACTION_POWER_DISCONNECTED" -> {
++        MSPenCharger.turnOffPenCharger()
++        Log.d(TAG, "Pen Charger turned off from unplugged event.")
++      }
++    }
++  }
++}
+diff --git a/app/src/main/java/me/phh/treble/app/SettingsActivity.kt b/app/src/main/java/me/phh/treble/app/SettingsActivity.kt
+index 0000000000..1111111111 100644
+--- a/app/src/main/java/me/phh/treble/app/SettingsActivity.kt
++++ b/app/src/main/java/me/phh/treble/app/SettingsActivity.kt
+@@ -53,6 +53,7 @@ class SettingsActivity : AppCompatActivity() {
+                 "doze_settings" to "me.phh.treble.app.DozeSettingsFragment",
++                "duo_settings" to "me.phh.treble.app.DuoSettingsFragment",
+                 "mediatek_settings" to "me.phh.treble.app.MediatekSettingsFragment",
+diff --git a/app/src/main/res/values/arrays.xml b/app/src/main/res/values/arrays.xml
+new file mode 100644
+index 0000000000..1111111111
+--- /dev/null
++++ b/app/src/main/res/values/arrays.xml
+@@ -0,0 +1,24 @@
++<?xml version="1.0" encoding="utf-8"?>
++<resources>
++    <string-array name="pref_posture_lock_entries">
++        <item>Dynamic</item>
++        <item>Right Screen</item>
++        <item>Left Screen</item>
++    </string-array>
++    <string-array name="pref_posture_lock_values">
++        <item>dynamic</item>
++        <item>right</item>
++        <item>left</item>
++    </string-array>
++    <string-array name="pref_hinge_peek_location_entries">
++        <item>Center</item>
++        <item>Top</item>
++        <item>Bottom</item>
++    </string-array>
++    <string-array name="pref_hinge_peek_location_values">
++        <item>center</item>
++        <item>top</item>
++        <item>bottom</item>
++    </string-array>
++</resources>
+diff --git a/app/src/main/res/xml/pref_duo.xml b/app/src/main/res/xml/pref_duo.xml
+new file mode 100644
+index 0000000000..1111111111
+--- /dev/null
++++ b/app/src/main/res/xml/pref_duo.xml
+@@ -0,0 +1,44 @@
++<?xml version="1.0" encoding="utf-8"?>
++<PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android">
++    <PreferenceCategory android:title="Hinge Gap">
++        <SwitchPreference
++        android:defaultValue="false"
++        android:key="key_disable_hinge_gap"
++        android:title="Disable Hinge Gap"
++        android:summary="Disable the hinge gap for Surface Duo. Requires a reboot" />
++    </PreferenceCategory>
++
++    <PreferenceCategory android:title="Posture">
++        <ListPreference
++            android:defaultValue="dynamic"
++            android:entries="@array/pref_posture_lock_entries"
++            android:entryValues="@array/pref_posture_lock_values"
++            android:key="key_duo_posture_lock"
++            android:title="Default Screen in Single-screen postures"
++        />
++    </PreferenceCategory>
++
++    <PreferenceCategory android:title="Pen Charging" android:key="key_duo_pen_charging_category">
++        <SwitchPreference
++            android:defaultValue="false"
++            android:key="wireless_pen_charging"
++            android:title="Enable Surface Slim Pen Wireless Charging"
++            android:summary="Allows pen charging when pen case is attached (drains more battery)."
++        />
++        <SwitchPreference
++            android:deadline="false"
++            android:key="charge_pen_while_device_is_charging"
++            android:title="Charge Pen only when device is plugged in"
++            android:summary="Only charges the pen when the device is plugged in. Overrides the previous option."
++        />
++    </PreferenceCategory>
++
++    <PreferenceCategory android:title="Peek Mode">
++        <SwitchPreference
++            android:defaultValue="true"
++            android:key="key_duo_show_peek_overlay"
++            android:title="Show Peek Mode Overlay"
++            android:summary="Enable Peek mode clock and Glance bar."
++        />
++        <ListPreference
++            android:defaultValue="center"
++            android:entries="@array/pref_hinge_peek_location_entries"
++            android:entryValues="@array/pref_hinge_peek_location_values"
++            android:key="key_duo_hinge_clock_peek_location"
++            android:title="Hinge Clock Location"
++            android:summary="Location of the hinge clock along the spine of the device."
++        />
++    </PreferenceCategory>
++
++</PreferenceScreen>
+diff --git a/app/src/main/res/xml/pref_headers.xml b/app/src/main/res/xml/pref_headers.xml
+index 0000000000..1111111111 100644
+--- a/app/src/main/res/xml/pref_headers.xml
++++ b/app/src/main/res/xml/pref_headers.xml
+@@ -64,4 +64,9 @@
+             android:key="doze_settings"
+             android:title="@string/title_doze"
+             android:icon="@drawable/doze" />
++        <Preference
++            android:layout="@layout/preference_custom_head"
++            android:key="duo_settings"
++            android:title="Surface Duo"
++            android:summary="Hinge, posture, pen charger, peek mode"
++            android:icon="@drawable/devices" />
+     </PreferenceCategory>
+-- 
+2.34.1

@@ -23,8 +23,8 @@ echo -e "   by Archfx"
 echo -e "${BOLD}=========================================${NC}"
 echo
 
-BL="$PWD/duo-de"
-BD="$PWD/duo-de/builds"
+BL="$PWD/surface-duo-aosp"
+BD="$PWD/surface-duo-aosp/builds"
 TAG="$(date +v%Y.%m.%d)"
 GUSER="bariccattion"
 GREPO="surface-duo-aosp"

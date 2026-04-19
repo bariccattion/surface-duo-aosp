@@ -23,7 +23,7 @@ jobs:
         run: echo "RELEASE_TITLE=$(date +'v%Y.%m.%d')" >> $GITHUB_ENV
 
       - name: Build Image
-        run: docker build -f build/Dockerfile -t duo-de/treble .
+        run: docker build -f build/Dockerfile -t surface-duo-aosp/treble .
 
       - name: Build ROM
         run: |
@@ -31,10 +31,10 @@ jobs:
           docker run --rm \
                      --privileged \
                      --name treble \
-                     --volume ${{ github.workspace }}/builds:/aosp/duo-de/builds \
+                     --volume ${{ github.workspace }}/builds:/aosp/surface-duo-aosp/builds \
                      --volume ${{ github.workspace }}/signing-keys:/aosp/archfx-priv/keys \
-                     --volume ${{ github.workspace }}/config/ota.json:/aosp/duo-de/config/ota.json \
-                     duo-de/treble fullbuild
+                     --volume ${{ github.workspace }}/config/ota.json:/aosp/surface-duo-aosp/config/ota.json \
+                     surface-duo-aosp/treble fullbuild
 
       - name: Upload OTA
         uses: actions/upload-artifact@v4

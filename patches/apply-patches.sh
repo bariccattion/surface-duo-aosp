@@ -1,11 +1,11 @@
 #!/bin/bash
 
 # ================================================================
-# DUO-DE Patch Application Script
-# Applies TrebleDroid and/or personal patches to AOSP source tree
+# Surface Duo AOSP Patch Application Script
+# Applies TrebleDroid, doze-off and/or duo patches to AOSP source tree
 # ================================================================
 # Usage:
-#   apply-patches.sh <source_dir> [trebledroid|personal]
+#   apply-patches.sh <source_dir> [trebledroid|doze-off|duo]
 # ================================================================
 
 set -euo pipefail
@@ -23,9 +23,9 @@ source_dir="$1"
 patch_type="$2"
 
 if [ -z "$source_dir" ]; then
-    echo -e "${RED}Usage: $0 <source_dir> [trebledroid|personal]${NC}"
+    echo -e "${RED}Usage: $0 <source_dir> [trebledroid|doze-off|duo]${NC}"
     echo "  If patch_type is specified, only that type is applied."
-    echo "  If not specified, both trebledroid and personal are applied."
+    echo "  If not specified, all patch types are applied."
     exit 1
 fi
 
@@ -135,7 +135,6 @@ if [ -n "$patch_type" ]; then
     apply_patch_set "$patch_type"
 else
     apply_patch_set "trebledroid"
-    apply_patch_set "ponces"
     apply_patch_set "doze-off"
 fi
 

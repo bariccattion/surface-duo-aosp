@@ -10,7 +10,7 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - name: Checkout duo-de
+    - name: Checkout surface-duo-aosp
       uses: actions/checkout@v4
 
     - name: Checkout Infinity X patches
@@ -52,5 +52,5 @@ jobs:
         branch: sync-bot
         base: android-16.2
         title: "Infinity X Patches Sync"
-        body: "This PR updates the trebledroid patches from Infinity X (Doze-off/patches patches-16.2 branch). Doze-off and ponces patches are curated manually."
+        body: "This PR updates the trebledroid patches from Infinity X (Doze-off/patches patches-16.2 branch). Doze-off patches are curated manually."
         labels: 'automated-pr'

@@ -21,7 +21,7 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Build Image
-        run: docker build -f build/Dockerfile -t duo-de/treble .
+        run: docker build -f build/Dockerfile -t surface-duo-aosp/treble .
 
       - name: Build ROM
         run: |
@@ -29,15 +29,15 @@ jobs:
           docker run --rm \
                      --privileged \
                      --name treble \
-                     --volume ${{ github.workspace }}/builds:/aosp/duo-de/builds \
+                     --volume ${{ github.workspace }}/builds:/aosp/surface-duo-aosp/builds \
                      --volume ${{ github.workspace }}/signing-keys:/aosp/archfx-priv/keys \
-                     --volume ${{ github.workspace }}/config/ota.json:/aosp/duo-de/config/ota.json \
-                     duo-de/treble fullbuild
+                     --volume ${{ github.workspace }}/config/ota.json:/aosp/surface-duo-aosp/config/ota.json \
+                     surface-duo-aosp/treble fullbuild
 
       - name: Upload ROM
         uses: actions/upload-artifact@v4
         with:
-          name: duo-de-build
+          name: surface-duo-aosp-build
           path: builds/*.xz
 
   cleanup:

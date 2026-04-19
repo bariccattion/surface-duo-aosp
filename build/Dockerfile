@@ -2,10 +2,8 @@ FROM ubuntu:22.04
 
 ARG DEBIAN_FRONTEND=noninteractive
 
-COPY . /aosp/duo-de
-RUN ln -s /aosp/duo-de/full_build.sh /usr/bin/fullbuild && \
-    ln -s /aosp/duo-de/build.sh /usr/bin/treblebuild && \
-    ln -s /aosp/duo-de/sync.sh /usr/bin/treblesync
+COPY . /aosp/surface-duo-aosp
+RUN ln -s /aosp/surface-duo-aosp/build.sh /usr/bin/fullbuild
 
 RUN sed -i 's|http://archive.ubuntu.com|http://mirror.math.princeton.edu/pub/ubuntu|g' /etc/apt/sources.list && \
     sed -i 's|http://security.ubuntu.com|http://mirror.math.princeton.edu/pub/ubuntu|g' /etc/apt/sources.list && \
@@ -62,7 +60,7 @@ RUN curl https://packagecloud.io/install/repositories/github/git-lfs/script.deb.
     apt update && apt install -y git-lfs && \
     git lfs install
 
-RUN git config --global user.name "DUO-DE Builder" && \
+RUN git config --global user.name "Surface Duo Builder" && \
     git config --global user.email "bariccatti@gmail.com" && \
     git config --global color.ui auto
 
