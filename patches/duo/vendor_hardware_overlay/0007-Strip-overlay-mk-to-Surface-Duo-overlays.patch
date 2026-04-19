@@ -1,15 +1,15 @@
-From b234851e062fb07fde8c246db59d2306a450549c Mon Sep 17 00:00:00 2001
+From ef43a1dc025b6fca9f9499d94786c423367ebd68 Mon Sep 17 00:00:00 2001
 From: Surface Duo Builder <bariccatti@gmail.com>
-Date: Sun, 19 Apr 2026 14:46:42 +0000
+Date: Sun, 19 Apr 2026 20:25:25 -0300
 Subject: [PATCH] Strip overlay.mk to Surface Duo relevant overlays only
 
 Change-Id: I1ef04772ef09a8b8f1e8f454293cc2d3485335b7
 ---
- overlay.mk | 455 +----------------------------------------------------
- 1 file changed, 3 insertions(+), 452 deletions(-)
+ overlay.mk | 453 +----------------------------------------------------
+ 1 file changed, 2 insertions(+), 451 deletions(-)
 
 diff --git a/overlay.mk b/overlay.mk
-index 452c1b3..810b5f2 100644
+index 452c1b3..73dc89b 100644
 --- a/overlay.mk
 +++ b/overlay.mk
 @@ -2,472 +2,23 @@ PRODUCT_PACKAGES += \
@@ -367,7 +367,7 @@ index 452c1b3..810b5f2 100644
 -	treble-overlay-tecno-spark5 \
 -	treble-overlay-tecno-spark6 \
 -	treble-overlay-tecno-spark8pro \
--	treble-overlay-telephony-caf-ims \
+ 	treble-overlay-telephony-caf-ims \
 -	treble-overlay-telephony-floss-ims \
 -	treble-overlay-telephony-hw-ims \
 -	treble-overlay-telephony-mtk-ims \
@@ -390,7 +390,6 @@ index 452c1b3..810b5f2 100644
 -	treble-overlay-vsmart-active3 \
 -	treble-overlay-vsmart-joy3 \
 -	treble-overlay-vsmart-live \
-+	treble-overlay-telephony-caf-ims \
  	treble-overlay-wifi \
 -	treble-overlay-wifi5g \
 -	treble-overlay-xiaomi-civi \
@@ -488,6 +487,7 @@ index 452c1b3..810b5f2 100644
 -	treble-overlay-xiaomi-thor \
 -
 +	treble-overlay-wifi5g
+\ No newline at end of file
 -- 
-2.34.1
+2.53.0.windows.1
 
