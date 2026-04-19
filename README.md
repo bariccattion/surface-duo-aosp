@@ -16,10 +16,6 @@ This ROM switches between tablet mode (first image) and phone mode (second image
 ### Floating Windows
 Floating windowed mode can be enabled/disabled for tablet mode and phone mode separately. To do that, click and hold the desktop, click `Home settings`, and find the settings `Tablet Mode Floating Windows` and `Phone Mode Floating Windows`. 
 
-## Security
-
-All Surface Duo releases are signed with [release keys](https://source.android.com/docs/core/ota/sign_builds), ensuring protection against malicious OTA updates and unauthorized system application replacements. Additionally, Surface Duo passes [play integrity checks](https://developer.android.com/google/play/integrity/overview), safeguarding against malicious applications. For more details about the security of GSI images like Surface Duo, visit [this post](https://archfx.me/posts/2024/12/androidsecurity/).
-
 ## Flashing steps
 Following are the steps to flash this image to your surface duo.
 

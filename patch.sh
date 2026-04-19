@@ -86,12 +86,11 @@ for project in "${PROJECTS[@]}"; do
             APPLIED=$((APPLIED + 1))
         else
             git am --abort > /dev/null 2>&1 || true
+            git checkout . > /dev/null 2>&1 || true
 
-            if patch -f -p1 < "$patch_file" > /dev/null 2>&1; then
-                git add -u
-                git commit -m "$patch_name" > /dev/null 2>&1
-                echo -e "      ${DIM}[$local_num/$local_total]${NC} ${YELLOW}FALL${NC}  $patch_name (fallback)"
-                APPLIED=$((APPLIED + 1))
+            if git apply --check -R "$patch_file" > /dev/null 2>&1; then
+                echo -e "      ${DIM}[$local_num/$local_total]${NC} ${DIM}SKIP${NC}  $patch_name (already applied)"
+                SKIPPED=$((SKIPPED + 1))
             else
                 echo -e "      ${DIM}[$local_num/$local_total]${NC} ${RED}FAIL${NC}  $patch_name"
                 FAILED=$((FAILED + 1))
@@ -103,7 +102,7 @@ for project in "${PROJECTS[@]}"; do
 done
 
 echo
-echo -e "  ${CYAN}Surface Duo summary:${NC}  ${GREEN}$APPLIED applied${NC}, ${RED}$FAILED failed${NC} (of $TOTAL total)"
+echo -e "  ${CYAN}Surface Duo summary:${NC}  ${GREEN}$APPLIED applied${NC}, ${DIM}$SKIPPED skipped${NC}, ${RED}$FAILED failed${NC} (of $TOTAL total)"
 echo
 
 if [ "$FAILED" -gt 0 ]; then

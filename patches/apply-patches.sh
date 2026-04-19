@@ -93,7 +93,7 @@ apply_patch_set() {
             TOTAL_PATCHES=$((TOTAL_PATCHES + 1))
             local patch_name=$(basename "$patch_file")
 
-            if patch -p1 --dry-run -R "$patch_file" > /dev/null 2>&1; then
+            if git apply --check -R "$patch_file" > /dev/null 2>&1; then
                 echo -e "      ${DIM}[$patch_num/$total_patches]${NC} ${DIM}SKIP${NC}  $patch_name (already applied)"
                 SKIPPED=$((SKIPPED + 1))
                 continue
@@ -106,22 +106,10 @@ apply_patch_set() {
             fi
 
             git am --abort > /dev/null 2>&1 || true
+            git checkout . > /dev/null 2>&1 || true
 
-            if git apply --check "$patch_file" > /dev/null 2>&1; then
-                git am "$patch_file" > /dev/null 2>&1 && {
-                    echo -e "      ${DIM}[$patch_num/$total_patches]${NC} ${GREEN} OK ${NC}  $patch_name"
-                    APPLIED=$((APPLIED + 1))
-                    continue
-                }
-            fi
-
-            if patch -f -p1 < "$patch_file" > /dev/null 2>&1; then
-                git add -u
-                git commit -m "$patch_name" > /dev/null 2>&1
-                echo -e "      ${DIM}[$patch_num/$total_patches]${NC} ${YELLOW}FALL${NC}  $patch_name (fallback)"
-                APPLIED=$((APPLIED + 1))
-                continue
-            fi
+            echo -e "      ${DIM}[$patch_num/$total_patches]${NC} ${RED}FAIL${NC}  $patch_name"
+            FAILED=$((FAILED + 1))
 
             echo -e "      ${DIM}[$patch_num/$total_patches]${NC} ${RED}FAIL${NC}  $patch_name"
             FAILED=$((FAILED + 1))
