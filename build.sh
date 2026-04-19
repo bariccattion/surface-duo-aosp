@@ -276,9 +276,9 @@ STEP_START=$(date +%s)
 mkdir -p "$BUILD_DIR"
 log_info "Sourcing envsetup.sh from $SOURCE_DIR"
 cd "$SOURCE_DIR"
-set +e
+set +euo pipefail
 . build/envsetup.sh
-set -e
+set -euo pipefail
 log_success "Build environment ready"
 
 STEP_END=$(date +%s)
