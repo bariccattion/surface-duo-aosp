@@ -59,7 +59,8 @@ RUN curl https://packagecloud.io/install/repositories/github/git-lfs/script.deb.
 
 RUN git config --global user.name "Surface Duo Builder" && \
     git config --global user.email "bariccatti@gmail.com" && \
-    git config --global color.ui auto
+    git config --global color.ui auto && \
+    git config --global core.autocrlf false
 
 ENV JAVA_HOME=/usr/lib/jvm/java-17-openjdk-amd64
 ENV LANG=en_US.UTF-8
