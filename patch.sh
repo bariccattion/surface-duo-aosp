@@ -93,6 +93,12 @@ for project in "${PROJECTS[@]}"; do
                 SKIPPED=$((SKIPPED + 1))
             else
                 echo -e "      ${DIM}[$local_num/$local_total]${NC} ${RED}FAIL${NC}  $patch_name"
+                echo -e "        ${DIM}--- git apply --check ---${NC}"
+                git apply --check "$patch_file" 2>&1 | sed 's/^/        /'
+                echo -e "        ${DIM}--- context (first 3 hunks) ---${NC}"
+                grep '^@@' "$patch_file" | head -3 | sed 's/^/        /'
+                echo -e "        ${DIM}--- patch targets ---${NC}"
+                grep '^--- a/\|^+++ b/' "$patch_file" | sed 's/^/        /'
                 FAILED=$((FAILED + 1))
             fi
         fi
