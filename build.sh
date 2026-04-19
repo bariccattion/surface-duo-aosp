@@ -132,6 +132,7 @@ echo -e "  Build date:   $(date '+%Y-%m-%d %H:%M:%S')"
 echo -e "  Source dir:   $SOURCE_DIR"
 echo -e "  Output dir:   $BUILD_DIR"
 echo -e "  Keys dir:     $KEYS_DIR"
+echo -e "  Working dir:  $(pwd)"
 echo -e "  Variants:     $([ "$BUILD_GAPPS" = true ] && echo -n "gapps ")$([ "$BUILD_VANILLA" = true ] && echo -n "vanilla")"
 echo
 echo -e "  Skip sync:    $SKIP_SYNC"
@@ -273,8 +274,11 @@ log_step "Step 5/8: Setting up build environment"
 STEP_START=$(date +%s)
 
 mkdir -p "$BUILD_DIR"
-log_info "Sourcing envsetup.sh"
-source build/envsetup.sh > /dev/null 2>&1
+log_info "Sourcing envsetup.sh from $SOURCE_DIR"
+cd "$SOURCE_DIR"
+set +e
+. build/envsetup.sh
+set -e
 log_success "Build environment ready"
 
 STEP_END=$(date +%s)
