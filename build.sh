@@ -182,7 +182,7 @@ STEP_START=$(date +%s)
 
      log_info "Resetting source tree before sync"
      cd "$SOURCE_DIR"
-     repo forall -c 'git config core.autocrlf false && git reset --hard && git clean -fdx' 2>/dev/null || true
+     repo forall -c 'git reset --hard && git clean -fdx' 2>/dev/null || true
 
     log_info "Syncing source tree (this takes 20-60+ minutes)..."
     MAX_SYNC_RETRIES=5
