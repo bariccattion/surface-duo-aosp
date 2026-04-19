@@ -38,183 +38,66 @@ deleted file mode 100644
 index b3420d1..0000000
 --- a/HW-IMS/Android.mk
 +++ /dev/null
-@@ -1,8 +0,0 @@
--LOCAL_PATH := $(call my-dir)
--include $(CLEAR_VARS)
--LOCAL_MODULE_TAGS := optional
--LOCAL_PACKAGE_NAME := treble-overlay-hw-ims
--LOCAL_MODULE_PATH := $(TARGET_OUT_PRODUCT)/overlay
--LOCAL_IS_RUNTIME_RESOURCE_OVERLAY := true
--LOCAL_PRIVATE_PLATFORM_APIS := true
--include $(BUILD_PACKAGE)
 diff --git a/HW-IMS/AndroidManifest.xml b/HW-IMS/AndroidManifest.xml
 deleted file mode 100644
 index f3d5a00..0000000
 --- a/HW-IMS/AndroidManifest.xml
 +++ /dev/null
-@@ -1,10 +0,0 @@
--<manifest xmlns:android="http://schemas.android.com/apk/res/android"
--        package="me.phh.treble.overlay.hwims"
--        android:versionCode="1"
--        android:versionName="1.0">
--        <overlay android:targetPackage="android"
--                android:requiredSystemPropertyName="persist.sys.phh.ims.hw"
--                android:requiredSystemPropertyValue="true"
--		android:priority="77"
--		android:isStatic="true" />
--</manifest>
 diff --git a/HW-IMS/res/values/config.xml b/HW-IMS/res/values/config.xml
 deleted file mode 100644
 index 43991ca..0000000
 --- a/HW-IMS/res/values/config.xml
 +++ /dev/null
-@@ -1,8 +0,0 @@
--<?xml version="1.0" encoding="utf-8"?>
--<resources>
--	<string name="config_ims_package">com.huawei.ims</string>
--	<bool name="config_dynamic_bind_ims">true</bool>
--	<bool name="config_carrier_volte_available">true</bool>
--	<bool name="config_device_volte_available">true</bool>
--	<bool name="config_device_wfc_ims_available">true</bool>
--</resources>
 diff --git a/MTK-IMS/Android.mk b/MTK-IMS/Android.mk
 deleted file mode 100644
 index c2f34ed..0000000
 --- a/MTK-IMS/Android.mk
 +++ /dev/null
-@@ -1,8 +0,0 @@
--LOCAL_PATH := $(call my-dir)
--include $(CLEAR_VARS)
--LOCAL_MODULE_TAGS := optional
--LOCAL_PACKAGE_NAME := treble-overlay-mtk-ims
--LOCAL_MODULE_PATH := $(TARGET_OUT_PRODUCT)/overlay
--LOCAL_IS_RUNTIME_RESOURCE_OVERLAY := true
--LOCAL_PRIVATE_PLATFORM_APIS := true
--include $(BUILD_PACKAGE)
 diff --git a/MTK-IMS/AndroidManifest.xml b/MTK-IMS/AndroidManifest.xml
 deleted file mode 100644
 index 96ba83e..0000000
 --- a/MTK-IMS/AndroidManifest.xml
 +++ /dev/null
-@@ -1,10 +0,0 @@
--<manifest xmlns:android="http://schemas.android.com/apk/res/android"
--        package="me.phh.treble.overlay.mtkims"
--        android:versionCode="1"
--        android:versionName="1.0">
--        <overlay android:targetPackage="android"
--                android:requiredSystemPropertyName="persist.sys.phh.ims.mtk"
--                android:requiredSystemPropertyValue="true"
--		android:priority="79"
--		android:isStatic="true" />
--</manifest>
 diff --git a/MTK-IMS/res/values/config.xml b/MTK-IMS/res/values/config.xml
 deleted file mode 100644
 index f5e0486..0000000
 --- a/MTK-IMS/res/values/config.xml
 +++ /dev/null
-@@ -1,6 +0,0 @@
--<?xml version="1.0" encoding="utf-8"?>
--<resources>
--	<string name="config_ims_package">com.mediatek.ims</string>
--        <bool name="config_carrier_volte_available">true</bool>
--	<bool name="config_dynamic_bind_ims">true</bool>
--</resources>
 diff --git a/SEC-IMS/Android.mk b/SEC-IMS/Android.mk
 deleted file mode 100644
 index af3fcde..0000000
 --- a/SEC-IMS/Android.mk
 +++ /dev/null
-@@ -1,8 +0,0 @@
--LOCAL_PATH := $(call my-dir)
--include $(CLEAR_VARS)
--LOCAL_MODULE_TAGS := optional
--LOCAL_PACKAGE_NAME := treble-overlay-sec-ims
--LOCAL_MODULE_PATH := $(TARGET_OUT_PRODUCT)/overlay
--LOCAL_IS_RUNTIME_RESOURCE_OVERLAY := true
--LOCAL_PRIVATE_PLATFORM_APIS := true
--include $(BUILD_PACKAGE)
 diff --git a/SEC-IMS/AndroidManifest.xml b/SEC-IMS/AndroidManifest.xml
 deleted file mode 100644
 index 280f04b..0000000
 --- a/SEC-IMS/AndroidManifest.xml
 +++ /dev/null
-@@ -1,10 +0,0 @@
--<manifest xmlns:android="http://schemas.android.com/apk/res/android"
--        package="me.phh.treble.overlay.secims"
--        android:versionCode="1"
--        android:versionName="1.0">
--        <overlay android:targetPackage="android"
--                android:requiredSystemPropertyName="persist.sys.phh.ims.sec"
--                android:requiredSystemPropertyValue="true"
--		android:priority="182"
--		android:isStatic="true" />
--</manifest>
 diff --git a/SEC-IMS/res/values/config.xml b/SEC-IMS/res/values/config.xml
 deleted file mode 100644
 index fa0bcab..0000000
 --- a/SEC-IMS/res/values/config.xml
 +++ /dev/null
-@@ -1,8 +0,0 @@
--<?xml version="1.0" encoding="utf-8"?>
--<resources>
--    <string name="config_ims_package">com.shannon.imsservice</string>
--	<bool name="config_dynamic_bind_ims">true</bool>
--    <bool name="config_carrier_volte_available">true</bool>
--    <bool name="config_device_volte_available">true</bool>
--    <bool name="config_device_wfc_ims_available">true</bool>
--</resources>
 diff --git a/SPRD-IMS/Android.mk b/SPRD-IMS/Android.mk
 deleted file mode 100644
 index 38a6106..0000000
 --- a/SPRD-IMS/Android.mk
 +++ /dev/null
-@@ -1,8 +0,0 @@
--LOCAL_PATH := $(call my-dir)
--include $(CLEAR_VARS)
--LOCAL_MODULE_TAGS := optional
--LOCAL_PACKAGE_NAME := treble-overlay-sprd-ims
--LOCAL_MODULE_PATH := $(TARGET_OUT_PRODUCT)/overlay
--LOCAL_IS_RUNTIME_RESOURCE_OVERLAY := true
--LOCAL_PRIVATE_PLATFORM_APIS := true
--include $(BUILD_PACKAGE)
 diff --git a/SPRD-IMS/AndroidManifest.xml b/SPRD-IMS/AndroidManifest.xml
 deleted file mode 100644
 index 78b21ec..0000000
 --- a/SPRD-IMS/AndroidManifest.xml
 +++ /dev/null
-@@ -1,10 +0,0 @@
--<manifest xmlns:android="http://schemas.android.com/apk/res/android"
--        package="me.phh.treble.overlay.sprdims"
--        android:versionCode="1"
--        android:versionName="1.0">
--        <overlay android:targetPackage="android"
--                android:requiredSystemPropertyName="persist.sys.phh.ims.sprd"
--                android:requiredSystemPropertyValue="true"
--		android:priority="155"
--		android:isStatic="true" />
--</manifest>
 diff --git a/SPRD-IMS/res/values/config.xml b/SPRD-IMS/res/values/config.xml
 deleted file mode 100644
 index 7cd019e..0000000
 --- a/SPRD-IMS/res/values/config.xml
 +++ /dev/null
-@@ -1,6 +0,0 @@
--<?xml version="1.0" encoding="utf-8"?>
--<resources>
--	<string name="config_ims_package">com.spreadtrum.ims</string>
--        <bool name="config_carrier_volte_available">true</bool>
--	<bool name="config_dynamic_bind_ims">true</bool>
--</resources>
 diff --git a/azure-pipelines.yml b/azure-pipelines.yml
 deleted file mode 100644
 index 9d3b771..0000000
 --- a/azure-pipelines.yml
 +++ /dev/null
-@@ -1,12 +0,0 @@
--pool:
--  vmImage: ubuntu-latest
--
--steps:
 -- script: |
 -    sudo apt install xmlstarlet dos2unix
 -    cd build
