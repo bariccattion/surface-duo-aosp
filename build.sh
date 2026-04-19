@@ -251,8 +251,11 @@ if [ "$SKIP_PATCHES" = false ]; then
         log_warn "Some Surface Duo patches had issues (non-fatal)"
     fi
 
-    STEP_END=$(date +%s)
-    log_success "Step 2 completed in $(elapsed $((STEP_END - STEP_START)))"
+     STEP_END=$(date +%s)
+     log_success "Step 2 completed in $(elapsed $((STEP_END - STEP_START)))"
+
+    log_info "Stripping OEM overlays and interfaces"
+    bash "$BUILD_ROOT/strip-overlays.sh"
 else
     log_warn "Skipping patches (--skip-patches)"
 fi
