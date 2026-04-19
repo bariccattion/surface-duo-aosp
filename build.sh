@@ -82,7 +82,7 @@ elapsed() {
 # ----------------------------------------------------------------
 BUILD_ROOT="/aosp/surface-duo-aosp"
 BUILD_DIR="/aosp/surface-duo-aosp/builds"
-SOURCE_DIR="/aosp"
+SOURCE_DIR="/aosp/source"
 INFINITY_MANIFEST_URL="https://github.com/ProjectInfinity-X/manifest"
 INFINITY_MANIFEST_BRANCH="16"
 PATCHES_DIR="$BUILD_ROOT/patches"

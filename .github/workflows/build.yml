@@ -25,10 +25,11 @@ jobs:
 
       - name: Build ROM
         run: |
-          mkdir -p builds
+          mkdir -p builds aosp-source
           docker run --rm \
                      --privileged \
                      --name treble \
+                     --volume ${{ github.workspace }}/aosp-source:/aosp/source \
                      --volume ${{ github.workspace }}/builds:/aosp/surface-duo-aosp/builds \
                      --volume ${{ github.workspace }}/signing-keys:/aosp/archfx-priv/keys \
                      --volume ${{ github.workspace }}/config/ota.json:/aosp/surface-duo-aosp/config/ota.json \

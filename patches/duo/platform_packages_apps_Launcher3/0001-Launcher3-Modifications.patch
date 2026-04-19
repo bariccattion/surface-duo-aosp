@@ -3,7 +3,11 @@ From: Bariccatti <bariccatti@gmail.com>
 Date: Sat, 18 Apr 2026 12:00:00 -0400
 Subject: [PATCH] DUO-DE Launcher3 dual-screen modifications
 
-Adapted for LineageOS Launcher3 (lineage-23.2 / Infinity X).
+NOTE: This patch is specific to the LineageOS 23.2 Launcher3 codebase
+(https://github.com/LineageOS/android_packages_apps_Launcher3, branch lineage-23.2).
+Infinity X ships this fork via LFS. It will NOT apply to AOSP's Launcher3.
+Key differences: uses mDeviceProperties.getHeightPx()/getWidthPx() instead of
+direct fields, allAppsTopPadding, simpler ActivityOptionsWrapper, etc.
 - All Apps drawer scales to partial height in spanned mode
 - Left/right screen alignment based on touch position
 - Freeform mode for app launching on dual-screen
