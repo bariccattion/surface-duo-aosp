@@ -35,77 +35,55 @@ Change-Id: If08c2df35a314d3de221ed4f4bafd4669c0e1022
 
 diff --git a/HW-IMS/Android.mk b/HW-IMS/Android.mk
 deleted file mode 100644
-index b3420d1..0000000
 --- a/HW-IMS/Android.mk
 +++ /dev/null
 diff --git a/HW-IMS/AndroidManifest.xml b/HW-IMS/AndroidManifest.xml
 deleted file mode 100644
-index f3d5a00..0000000
 --- a/HW-IMS/AndroidManifest.xml
 +++ /dev/null
 diff --git a/HW-IMS/res/values/config.xml b/HW-IMS/res/values/config.xml
 deleted file mode 100644
-index 43991ca..0000000
 --- a/HW-IMS/res/values/config.xml
 +++ /dev/null
 diff --git a/MTK-IMS/Android.mk b/MTK-IMS/Android.mk
 deleted file mode 100644
-index c2f34ed..0000000
 --- a/MTK-IMS/Android.mk
 +++ /dev/null
 diff --git a/MTK-IMS/AndroidManifest.xml b/MTK-IMS/AndroidManifest.xml
 deleted file mode 100644
-index 96ba83e..0000000
 --- a/MTK-IMS/AndroidManifest.xml
 +++ /dev/null
 diff --git a/MTK-IMS/res/values/config.xml b/MTK-IMS/res/values/config.xml
 deleted file mode 100644
-index f5e0486..0000000
 --- a/MTK-IMS/res/values/config.xml
 +++ /dev/null
 diff --git a/SEC-IMS/Android.mk b/SEC-IMS/Android.mk
 deleted file mode 100644
-index af3fcde..0000000
 --- a/SEC-IMS/Android.mk
 +++ /dev/null
 diff --git a/SEC-IMS/AndroidManifest.xml b/SEC-IMS/AndroidManifest.xml
 deleted file mode 100644
-index 280f04b..0000000
 --- a/SEC-IMS/AndroidManifest.xml
 +++ /dev/null
 diff --git a/SEC-IMS/res/values/config.xml b/SEC-IMS/res/values/config.xml
 deleted file mode 100644
-index fa0bcab..0000000
 --- a/SEC-IMS/res/values/config.xml
 +++ /dev/null
 diff --git a/SPRD-IMS/Android.mk b/SPRD-IMS/Android.mk
 deleted file mode 100644
-index 38a6106..0000000
 --- a/SPRD-IMS/Android.mk
 +++ /dev/null
 diff --git a/SPRD-IMS/AndroidManifest.xml b/SPRD-IMS/AndroidManifest.xml
 deleted file mode 100644
-index 78b21ec..0000000
 --- a/SPRD-IMS/AndroidManifest.xml
 +++ /dev/null
 diff --git a/SPRD-IMS/res/values/config.xml b/SPRD-IMS/res/values/config.xml
 deleted file mode 100644
-index 7cd019e..0000000
 --- a/SPRD-IMS/res/values/config.xml
 +++ /dev/null
 diff --git a/azure-pipelines.yml b/azure-pipelines.yml
 deleted file mode 100644
-index 9d3b771..0000000
 --- a/azure-pipelines.yml
 +++ /dev/null
--- script: |
--    sudo apt install xmlstarlet dos2unix
--    cd build
--    bash build.sh
--  displayName: 'Building APKs'
--
--- script: bash tests/tests.sh
--  displayName: 'Running test scripts'
 -- 
 2.34.1
-
