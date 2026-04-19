@@ -306,11 +306,12 @@ diff --git a/app/src/main/java/me/phh/treble/app/EntryService.kt b/app/src/main/
 index 0000000000..1111111111 100644
 --- a/app/src/main/java/me/phh/treble/app/EntryService.kt
 +++ b/app/src/main/java/me/phh/treble/app/EntryService.kt
-@@ -67,6 +67,7 @@ class EntryService : Service() {
+@@ -36,6 +36,7 @@ class EntryService : Service() {
                  "key_doze_motorola" to DozeSettings.isMotorola(),
 +                "duo_settings" to DuoSettings.enabled(context),
                  "key_misc_root_access" to MiscSettings.isRoot(),
-@@ -110,6 +111,7 @@ class EntryService : Service() {
+                 )
+@@ -80,6 +81,7 @@ class EntryService : Service() {
              tryC { Xiaomi.startup(this) }
 +            tryC { Duo.startup(this) }
  
@@ -401,10 +402,10 @@ diff --git a/app/src/main/java/me/phh/treble/app/SettingsActivity.kt b/app/src/m
 index 0000000000..1111111111 100644
 --- a/app/src/main/java/me/phh/treble/app/SettingsActivity.kt
 +++ b/app/src/main/java/me/phh/treble/app/SettingsActivity.kt
-@@ -53,6 +53,7 @@ class SettingsActivity : AppCompatActivity() {
-                 "doze_settings" to "me.phh.treble.app.DozeSettingsFragment",
-+                "duo_settings" to "me.phh.treble.app.DuoSettingsFragment",
-                 "mediatek_settings" to "me.phh.treble.app.MediatekSettingsFragment",
+@@ -76,6 +76,7 @@ class SettingsActivity : AppCompatActivity() {
+                     "doze_settings" to "me.phh.treble.app.DozeSettingsFragment",
++                    "duo_settings" to "me.phh.treble.app.DuoSettingsFragment",
+                     "mediatek_settings" to "me.phh.treble.app.MediatekSettingsFragment",
 diff --git a/app/src/main/res/values/arrays.xml b/app/src/main/res/values/arrays.xml
 new file mode 100644
 index 0000000000..1111111111
@@ -497,7 +498,7 @@ diff --git a/app/src/main/res/xml/pref_headers.xml b/app/src/main/res/xml/pref_h
 index 0000000000..1111111111 100644
 --- a/app/src/main/res/xml/pref_headers.xml
 +++ b/app/src/main/res/xml/pref_headers.xml
-@@ -64,4 +64,9 @@
+@@ -89,4 +89,9 @@
              android:key="doze_settings"
              android:title="@string/title_doze"
              android:icon="@drawable/doze" />

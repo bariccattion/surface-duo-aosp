@@ -1,8 +1,8 @@
 #!/bin/bash
 
 # ================================================================
-# DUO-DE Custom Patch Application Script
-# Applies DUO-DE specific patches (Surface Duo posture, overlays, etc.)
+# Surface Duo Custom Patch Application Script
+# Applies Surface Duo specific patches (posture, overlays, etc.)
 # ================================================================
 
 set -euo pipefail
@@ -31,7 +31,7 @@ if [ ! -d "$PATCH_DIR" ]; then
     exit 0
 fi
 
-echo -e "  ${CYAN}[DUO-DE]${NC} Applying ${BOLD}$tree${NC} patches from $PATCH_DIR"
+echo -e "  ${CYAN}[Surface Duo]${NC} Applying ${BOLD}$tree${NC} patches from $PATCH_DIR"
 
 TOTAL=0
 APPLIED=0
@@ -103,7 +103,7 @@ for project in "${PROJECTS[@]}"; do
 done
 
 echo
-echo -e "  ${CYAN}DUO-DE summary:${NC}  ${GREEN}$APPLIED applied${NC}, ${RED}$FAILED failed${NC} (of $TOTAL total)"
+echo -e "  ${CYAN}Surface Duo summary:${NC}  ${GREEN}$APPLIED applied${NC}, ${RED}$FAILED failed${NC} (of $TOTAL total)"
 echo
 
 if [ "$FAILED" -gt 0 ]; then

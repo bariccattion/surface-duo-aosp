@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # ================================================================
-# DUO-DE AOSP 16.0 QPR2 — Full Build Script
+# Surface Duo AOSP — Full Build Script
 # Based on Infinity X GSI
 # ================================================================
 # Usage:
@@ -125,8 +125,7 @@ done
 # ----------------------------------------------------------------
 echo
 echo -e "${BOLD}=========================================${NC}"
-echo -e "${BOLD}   DUO-DE AOSP 16.0 QPR2 Build System"
-echo -e "   Based on Infinity X GSI"
+echo -e "${BOLD}   Surface Duo AOSP Build System"
 echo -e "${BOLD}=========================================${NC}"
 echo
 echo -e "  Build date:   $(date '+%Y-%m-%d %H:%M:%S')"
@@ -158,7 +157,7 @@ if [ "$SKIP_SYNC" = false ]; then
         -g default,-mips,-darwin,-notdefault
     log_success "Repo initialized"
 
-    log_info "Installing DUO-DE local manifests"
+    log_info "Installing Surface Duo local manifests"
     rm -rf .repo/local_manifests
     mkdir -p .repo/local_manifests
     cp "$BUILD_ROOT/build/duode.xml" .repo/local_manifests/duode.xml
@@ -206,6 +205,9 @@ if [ "$SKIP_PATCHES" = false ]; then
     log_step "Step 2/8: Applying patches"
     STEP_START=$(date +%s)
 
+    log_info "Resetting source tree (clean state for patching)"
+    repo forall -c 'git reset --hard && git clean -fdx' > /dev/null 2>&1 || true
+
     log_info "Applying TrebleDroid patches"
     if bash "$PATCHES_DIR/apply-patches.sh" "$(pwd)" trebledroid; then
         log_success "TrebleDroid patches applied"
@@ -220,11 +222,11 @@ if [ "$SKIP_PATCHES" = false ]; then
         log_warn "Some Doze-off patches had issues (non-fatal)"
     fi
 
-    log_info "Applying DUO-DE patches"
+    log_info "Applying Surface Duo patches"
     if bash "$BUILD_ROOT/patch.sh" "$BUILD_ROOT" duo; then
-        log_success "DUO-DE patches applied"
+        log_success "Surface Duo patches applied"
     else
-        log_warn "Some DUO-DE patches had issues (non-fatal)"
+        log_warn "Some Surface Duo patches had issues (non-fatal)"
     fi
 
     STEP_END=$(date +%s)

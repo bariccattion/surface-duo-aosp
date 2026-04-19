@@ -1,8 +1,6 @@
-# Surface-duo Dual Experience [duo-de][A16 QPR2]
+# Surface Duo AOSP Experience
 
-The Surface Duo, Microsoft's dual-screen Android device, aimed to redefine mobile productivity by offering a unique form factor that combined the versatility of two screens with the familiarity of the Android operating system. Although Microsoft officially ceased updates and support for the Surface Duo line in early 2023, with AOSP GSI and the help of the open-source community, it is time to give a second life to this awesome and unique hardware.
-
-DUO-DE is a GSI variant Android ROM created for Microsoft Surface Duo devices, offering a clean AOSP experience. This build combines gapps/vanila variants of the GSI ROM from [ponces](https://github.com/ponces/treble_aosp) with desktop mode enabled + various tweaks to make it nice and smooth with the help of [thain](https://github.com/thai-ng) tweaks. All credits go to respective developers.
+This build combines desktop mode enabled + various tweaks to make it nice and smooth with the help of [thain](https://github.com/thai-ng) tweaks.
 
 ## Posture Engine and Dual Modes
 
@@ -20,7 +18,7 @@ Floating windowed mode can be enabled/disabled for tablet mode and phone mode se
 
 ## Security
 
-All DUO-DE releases are signed with [release keys](https://source.android.com/docs/core/ota/sign_builds), ensuring protection against malicious OTA updates and unauthorized system application replacements. Additionally, DUO-DE passes [play integrity checks](https://developer.android.com/google/play/integrity/overview), safeguarding against malicious applications. For more details about the security of GSI images like DUO-DE, visit [this post](https://archfx.me/posts/2024/12/androidsecurity/).
+All Surface Duo releases are signed with [release keys](https://source.android.com/docs/core/ota/sign_builds), ensuring protection against malicious OTA updates and unauthorized system application replacements. Additionally, Surface Duo passes [play integrity checks](https://developer.android.com/google/play/integrity/overview), safeguarding against malicious applications. For more details about the security of GSI images like Surface Duo, visit [this post](https://archfx.me/posts/2024/12/androidsecurity/).
 
 ## Flashing steps
 Following are the steps to flash this image to your surface duo.
@@ -68,30 +66,6 @@ fastboot reboot
    > If prompted to select the default updater, select `PHH treble updater` for always.
 8. Enable the ideal `Treble Settings` as outlined [here](https://github.com/Archfx/duo-de/discussions/81). 
 9. If you wish to see future updates and feature improvements, consider _starring_ (★) the project—it motivates the development of new releases!
-
-## Building from source
-
-1. Build the Docker image
-```
-docker build -f build/Dockerfile -t duo-de/treble .
-```
-
-2. Run the build container
-```
-mkdir builds
-docker run --rm --privileged \
-    --name treble \
-    --volume $(pwd)/builds:/aosp/duo-de/builds \
-    --volume /path/to/signing-keys:/aosp/archfx-priv/keys \
-    duo-de/treble treblebuild
-```
-
-3. Collect output
-```
-Built images land in builds/ as:
-- aosp-arm64-ab-gapps-16.0-YYYYMMDD.img.xz
-- aosp-arm64-ab-vanilla-16.0-YYYYMMDD.img.xz
-```
 
 ## Credits
 These people have helped this project in some way or another, so they should be the ones who receive all the credit:
