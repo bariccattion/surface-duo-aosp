@@ -1,14 +1,12 @@
-From 25812b7a13465aeee70b13d029f4479b501587ff Mon Sep 17 00:00:00 2001
+From 0facb4ffddb91c2e4de3df11b61aab2dedb10c0b Mon Sep 17 00:00:00 2001
 From: Surface Duo Builder <bariccatti@gmail.com>
-Date: Mon, 20 Apr 2026 02:25:06 +0000
+Date: Mon, 20 Apr 2026 02:33:28 +0000
 Subject: [PATCH] Remove OEM HALs with missing vendor HIDL dependencies
-
-Remove oplus/oppo fingerprint HALs and OEM-specific packages from
-PRODUCT_PACKAGES that depend on missing vendor HIDL interfaces.
 
 Change-Id: Ia1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9b0
 ---
- base.mk                                       |   8 -
+ base.mk                                       |  11 -
+ cmds/Android.bp                               | 228 ---------------
  hal/oplus-fp/Android.bp                       |  23 --
  hal/oplus-fp/BiometricsFingerprint.cpp        | 267 ------------------
  hal/oplus-fp/BiometricsFingerprint.h          |  78 -----
@@ -19,7 +17,7 @@ Change-Id: Ia1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9b0
  hal/oppo-fp/BiometricsFingerprint.h           |  78 -----
  ...biometrics.fingerprint@2.1-service.oppo.rc |   9 -
  hal/oppo-fp/service.cpp                       |  61 ----
- 11 files changed, 884 deletions(-)
+ 12 files changed, 1115 deletions(-)
  delete mode 100644 hal/oplus-fp/Android.bp
  delete mode 100644 hal/oplus-fp/BiometricsFingerprint.cpp
  delete mode 100644 hal/oplus-fp/BiometricsFingerprint.h
@@ -32,10 +30,22 @@ Change-Id: Ia1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9b0
  delete mode 100644 hal/oppo-fp/service.cpp
 
 diff --git a/base.mk b/base.mk
-index 04cf120..95b2002 100644
+index 04cf120..338ee84 100644
 --- a/base.mk
 +++ b/base.mk
-@@ -155,12 +155,9 @@ PRODUCT_COPY_FILES += \
+@@ -97,11 +97,8 @@ endif
+ 
+ PRODUCT_PACKAGES += \
+     android.hidl.manager-V1.0-java \
+-    vendor.huawei.hardware.biometrics.fingerprint-V2.1-java \
+-    vendor.huawei.hardware.tp-V1.0-java \
+     vendor.qti.hardware.radio.am-V1.0-java \
+     vendor.qti.qcril.am-V1.0-java \
+-    vendor.xiaomi.hardware.displayfeature-V1.0-java
+ 
+ PRODUCT_COPY_FILES += \
+     device/phh/treble/interfaces.xml:system/etc/permissions/interfaces.xml
+@@ -155,12 +152,9 @@ PRODUCT_COPY_FILES += \
  
  # MTK incoming SMS fix
  PRODUCT_PACKAGES += \
@@ -48,7 +58,7 @@ index 04cf120..95b2002 100644
  
  PRODUCT_PACKAGES += \
      Stk
-@@ -182,7 +179,6 @@ PRODUCT_COPY_FILES += \
+@@ -182,7 +176,6 @@ PRODUCT_COPY_FILES += \
      device/phh/treble/ld.config.26.txt:system/etc/ld.config.26.txt \
  
  PRODUCT_PACKAGES += \
@@ -56,7 +66,7 @@ index 04cf120..95b2002 100644
  
  # Privapp-permissions whitelist for PhhTrebleApp
  PRODUCT_COPY_FILES += \
-@@ -196,8 +192,6 @@ PRODUCT_COPY_FILES += \
+@@ -196,8 +189,6 @@ PRODUCT_COPY_FILES += \
      device/phh/treble/remote/phh-remotectl.sh:system/bin/phh-remotectl.sh \
  
  PRODUCT_PACKAGES += \
@@ -65,7 +75,7 @@ index 04cf120..95b2002 100644
  
  PRODUCT_PACKAGES += \
      curl 
-@@ -216,7 +210,6 @@ PRODUCT_PACKAGES += \
+@@ -216,7 +207,6 @@ PRODUCT_PACKAGES += \
      NavigationBarMode2ButtonOverlay
  
  PRODUCT_PACKAGES += \
@@ -73,7 +83,7 @@ index 04cf120..95b2002 100644
  
  PRODUCT_COPY_FILES += \
      device/phh/treble/overrides/nothing.txt:system/etc/smartpa_params/empty \
-@@ -228,7 +221,6 @@ PRODUCT_COPY_FILES += \
+@@ -228,7 +218,6 @@ PRODUCT_COPY_FILES += \
  PRODUCT_PACKAGES += phh-ota
  
  PRODUCT_PACKAGES += \
@@ -81,6 +91,284 @@ index 04cf120..95b2002 100644
  
  PRODUCT_COPY_FILES += \
      frameworks/av/services/audiopolicy/config/a2dp_audio_policy_configuration_7_0.xml:system/etc/a2dp_audio_policy_configuration_7_0.xml \
+diff --git a/cmds/Android.bp b/cmds/Android.bp
+index df2625f..bb862a0 100644
+--- a/cmds/Android.bp
++++ b/cmds/Android.bp
+@@ -10,18 +10,6 @@ cc_binary {
+ 	],
+ }
+ 
+-cc_binary {
+-	name: "op-fp",
+-	srcs: [
+-		"op-fp.cpp",
+-	],
+-	shared_libs: [
+-		"vendor.oneplus.fingerprint.extension@1.0",
+-		"libutils",
+-		"libhidlbase",
+-	],
+-}
+-
+ cc_binary {
+ 	name: "uevent",
+ 	srcs: [
+@@ -37,105 +25,6 @@ cc_binary {
+ 	host_supported: true,
+ }
+ 
+-cc_binary {
+-	name: "vibrator-lge",
+-	srcs: [
+-		"vibrator-lge.cpp",
+-	],
+-	shared_libs: [
+-		"vendor.lge.hardware.vibrator@1.0",
+-		"libutils",
+-		"libhidlbase",
+-	],
+-}
+-
+-cc_binary {
+-	name: "mtk-sms-fwk-ready",
+-	srcs: [
+-		"mtk-sms-fwk-ready.cpp",
+-	],
+-	shared_libs: [
+-		"vendor.mediatek.hardware.radio@2.6",
+-		"libutils",
+-		"libhidlbase",
+-	],
+-	init_rc: [
+-		"mtk-sms-fwk-ready.rc"
+-	],
+-}
+-
+-cc_binary {
+-	name: "xiaomi-display-feature",
+-	srcs: [
+-		"xiaomi-display-feature.cpp",
+-	],
+-	shared_libs: [
+-		"vendor.xiaomi.hardware.displayfeature@1.0",
+-		"libutils",
+-		"libhidlbase",
+-	],
+-}
+-
+-cc_binary {
+-	name: "xiaomi-fp",
+-	srcs: [
+-		"xiaomi-fp.cpp",
+-	],
+-	shared_libs: [
+-		"vendor.xiaomi.hardware.fingerprintextension@1.0",
+-		"libutils",
+-		"libhidlbase",
+-	],
+-}
+-
+-cc_binary {
+-	name: "lightsctl-sec",
+-	srcs: [
+-		"lightsctl-sec.cpp",
+-	],
+-	shared_libs: [
+-		"vendor.samsung.hardware.light@2.0",
+-		"libutils",
+-		"libhidlbase",
+-	],
+-}
+-
+-cc_binary {
+-	name: "lightsctl-seh",
+-	srcs: [
+-		"lightsctl-seh.cpp",
+-	],
+-	shared_libs: [
+-		"vendor.samsung.hardware.light@3.0",
+-		"libutils",
+-		"libhidlbase",
+-	],
+-}
+-
+-cc_binary {
+-	name: "xiaomi-motor",
+-	srcs: [
+-		"xiaomi-motor.cpp",
+-	],
+-	shared_libs: [
+-		"vendor.xiaomi.hardware.motor@1.0",
+-		"libutils",
+-		"libhidlbase",
+-	],
+-}
+-
+-cc_binary {
+-	name: "oneplus-motor",
+-	srcs: [
+-		"oneplus-motor.cpp",
+-	],
+-	shared_libs: [
+-		"vendor.oneplus.hardware.motorcontrol@1.0",
+-		"libutils",
+-		"libhidlbase",
+-	],
+-}
+-
+ cc_binary {
+ 	name: "persistprops",
+ 	srcs: [
+@@ -152,18 +41,6 @@ cc_binary {
+ 	],
+ }
+ 
+-cc_binary {
+-	name: "lightsctl-huawei",
+-	srcs: [
+-		"lightsctl-huawei.cpp",
+-	],
+-	shared_libs: [
+-		"vendor.huawei.hardware.light@2.0",
+-		"libutils",
+-		"libhidlbase",
+-	],
+-}
+-
+ cc_binary {
+ 	name: "asus-motor",
+ 	srcs: [
+@@ -171,31 +48,6 @@ cc_binary {
+ 	],
+ }
+ 
+-cc_binary {
+-	name: "goodix-fp",
+-	srcs: [
+-		"goodix-fp.cpp",
+-	],
+-	shared_libs: [
+-		"vendor.goodix.extend.service@2.0",
+-		"libutils",
+-		"libhidlbase",
+-	],
+-}
+-
+-cc_binary {
+-	name: "sec-camera-list",
+-	srcs: [
+-		"sec-camera-list.cpp",
+-	],
+-	shared_libs: [
+-		"vendor.samsung.hardware.camera.provider@4.0",
+-		"vendor.samsung.hardware.camera.provider@3.0",
+-		"libutils",
+-		"libhidlbase",
+-	],
+-}
+-
+ cc_binary {
+ 	name: "oplus-alert-slider",
+ 	srcs: [
+@@ -213,35 +65,6 @@ cc_binary {
+ 	],
+ }
+ 
+-cc_binary {
+-	name: "sec-ril",
+-	srcs: [
+-		"sec-ril.cpp",
+-	],
+-	shared_libs: [
+-		"android.hardware.radio@1.6",
+-		"vendor.samsung.hardware.radio@2.0",
+-		"vendor.samsung.hardware.radio@2.1",
+-		"vendor.samsung.hardware.radio@2.2",
+-		"libutils",
+-		"libhidlbase",
+-	],
+-}
+-
+-cc_binary {
+-	name: "sec-torch",
+-	srcs: [
+-		"sec-torch.cpp",
+-	],
+-	shared_libs: [
+-		"vendor.samsung.hardware.camera.provider@4.0",
+-		"vendor.samsung.hardware.camera.provider@3.0",
+-		"vendor.samsung.hardware.camera.device@5.0",
+-		"libutils",
+-		"libhidlbase",
+-	],
+-}
+-
+ cc_binary {
+ 	name: "lightsctl-aidl",
+ 	srcs: [
+@@ -255,45 +78,6 @@ cc_binary {
+ 	],
+ }
+ 
+-cc_binary {
+-	name: "slsi-ddiscaler",
+-	srcs: [
+-		"slsi-ddiscaler.cpp",
+-	],
+-	shared_libs: [
+-		"vendor.samsung_slsi.hardware.ExynosHWCServiceTW@1.0",
+-		"libutils",
+-		"libhidlbase",
+-	],
+-}
+-
+-cc_binary {
+-	name: "slsi-booted",
+-	srcs: [
+-		"slsi-booted.cpp",
+-	],
+-	shared_libs: [
+-		"vendor.samsung_slsi.hardware.ExynosHWCServiceTW@1.0",
+-		"libutils",
+-		"libhidlbase",
+-	],
+-	init_rc: [
+-		"slsi-booted.rc"
+-	],
+-}
+-
+-cc_binary {
+-	name: "mtk-power",
+-	srcs: [
+-		"mtk-power.cpp",
+-	],
+-	shared_libs: [
+-		"vendor.mediatek.hardware.mtkpower@1.0",
+-		"libutils",
+-		"libhidlbase",
+-	],
+-}
+-
+ cc_binary {
+ 	name: "evgrab",
+ 	srcs: [
+@@ -313,15 +97,3 @@ cc_binary {
+ 		"re-libged_sys.cpp",
+ 	],
+ }
+-
+-cc_binary {
+-	name: "agold-cmd",
+-	srcs: [
+-		"agold-cmd.cpp",
+-	],
+-	shared_libs: [
+-        "vendor.mediatek.hardware.agolddaemon-V1-cpp",
+-		"libutils",
+-		"libbinder",
+-	],
+-}
 diff --git a/hal/oplus-fp/Android.bp b/hal/oplus-fp/Android.bp
 deleted file mode 100644
 index 6f9448b..0000000
