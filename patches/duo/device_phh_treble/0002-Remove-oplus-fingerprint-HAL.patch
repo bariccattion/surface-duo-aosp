@@ -1,7 +1,7 @@
-From 602867bda0ee272cc640282d94db1b3c7ae53401 Mon Sep 17 00:00:00 2001
+From 3d9d4ebb9c99eade76af62b2ff63f5a3a5d13967 Mon Sep 17 00:00:00 2001
 From: Surface Duo Builder <bariccatti@gmail.com>
-Date: Mon, 20 Apr 2026 01:40:38 +0000
-Subject: [PATCH] Remove oplus fingerprint HAL (missing HIDL dependency)
+Date: Mon, 20 Apr 2026 02:06:22 +0000
+Subject: [PATCH] Remove oplus/oppo fingerprint HALs (missing HIDL deps)
 
 Change-Id: Ia1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9b0
 ---
@@ -10,12 +10,22 @@ Change-Id: Ia1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9b0
  hal/oplus-fp/BiometricsFingerprint.h          |  78 -----
  ...iometrics.fingerprint@2.1-service.oplus.rc |   9 -
  hal/oplus-fp/service.cpp                      |  61 ----
- 5 files changed, 438 deletions(-)
+ hal/oppo-fp/Android.bp                        |  23 --
+ hal/oppo-fp/BiometricsFingerprint.cpp         | 267 ------------------
+ hal/oppo-fp/BiometricsFingerprint.h           |  78 -----
+ ...biometrics.fingerprint@2.1-service.oppo.rc |   9 -
+ hal/oppo-fp/service.cpp                       |  61 ----
+ 10 files changed, 876 deletions(-)
  delete mode 100644 hal/oplus-fp/Android.bp
  delete mode 100644 hal/oplus-fp/BiometricsFingerprint.cpp
  delete mode 100644 hal/oplus-fp/BiometricsFingerprint.h
  delete mode 100644 hal/oplus-fp/android.hardware.biometrics.fingerprint@2.1-service.oplus.rc
  delete mode 100644 hal/oplus-fp/service.cpp
+ delete mode 100644 hal/oppo-fp/Android.bp
+ delete mode 100644 hal/oppo-fp/BiometricsFingerprint.cpp
+ delete mode 100644 hal/oppo-fp/BiometricsFingerprint.h
+ delete mode 100644 hal/oppo-fp/android.hardware.biometrics.fingerprint@2.1-service.oppo.rc
+ delete mode 100644 hal/oppo-fp/service.cpp
 
 diff --git a/hal/oplus-fp/Android.bp b/hal/oplus-fp/Android.bp
 deleted file mode 100644
@@ -422,6 +432,474 @@ diff --git a/hal/oplus-fp/service.cpp b/hal/oplus-fp/service.cpp
 deleted file mode 100644
 index 4b7623e..0000000
 --- a/hal/oplus-fp/service.cpp
++++ /dev/null
+@@ -1,61 +0,0 @@
+-/*
+- * Copyright (C) 2017 The Android Open Source Project
+- *
+- * Licensed under the Apache License, Version 2.0 (the "License");
+- * you may not use this file except in compliance with the License.
+- * You may obtain a copy of the License at
+- *
+- *      http://www.apache.org/licenses/LICENSE-2.0
+- *
+- * Unless required by applicable law or agreed to in writing, software
+- * distributed under the License is distributed on an "AS IS" BASIS,
+- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+- * See the License for the specific language governing permissions and
+- * limitations under the License.
+- */
+-
+-#define LOG_TAG "android.hardware.biometrics.fingerprint@2.1-service.realme_sdm710"
+-
+-#include <android-base/logging.h>
+-#include <hidl/HidlTransportSupport.h>
+-
+-#include "BiometricsFingerprint.h"
+-
+-using android::hardware::biometrics::fingerprint::V2_1::IBiometricsFingerprint;
+-using android::hardware::biometrics::fingerprint::V2_1::implementation::BiometricsFingerprint;
+-using android::hardware::configureRpcThreadpool;
+-using android::hardware::joinRpcThreadpool;
+-using android::OK;
+-using android::sp;
+-using android::status_t;
+-
+-int main() {
+-    sp<BiometricsFingerprint> biometricsFingerprint;
+-    status_t status;
+-
+-    LOG(INFO) << "Fingerprint HAL Adapter service is starting.";
+-
+-    biometricsFingerprint = new BiometricsFingerprint();
+-    if (biometricsFingerprint == nullptr) {
+-        LOG(ERROR) << "Can not create an instance of Fingerprint HAL Adapter BiometricsFingerprint Iface, exiting.";
+-        goto shutdown;
+-    }
+-
+-    configureRpcThreadpool(1, true /*callerWillJoin*/);
+-
+-    status = biometricsFingerprint->registerAsService();
+-    if (status != OK) {
+-        LOG(ERROR) << "Could not register service for Fingerprint HAL Adapter BiometricsFingerprint Iface ("
+-                   << status << ")";
+-        goto shutdown;
+-    }
+-
+-    LOG(INFO) << "Fingerprint HAL Adapter service is ready.";
+-    joinRpcThreadpool();
+-    // Should not pass this line
+-
+-shutdown:
+-    // In normal operation, we don't expect the thread pool to shutdown
+-    LOG(ERROR) << "Fingerprint HAL Adapter service is shutting down.";
+-    return 1;
+-}
+diff --git a/hal/oppo-fp/Android.bp b/hal/oppo-fp/Android.bp
+deleted file mode 100644
+index a3e08db..0000000
+--- a/hal/oppo-fp/Android.bp
++++ /dev/null
+@@ -1,23 +0,0 @@
+-cc_binary {
+-    name: "android.hardware.biometrics.fingerprint@2.1-service.oppo.compat",
+-    defaults: ["hidl_defaults"],
+-    init_rc: ["android.hardware.biometrics.fingerprint@2.1-service.oppo.rc"],
+-    relative_install_path: "hw",
+-    srcs: [
+-        "BiometricsFingerprint.cpp",
+-        "service.cpp",
+-    ],
+-    cflags: [
+-        "-Wno-unused-parameter",
+-    ],
+-    shared_libs: [
+-        "libcutils",
+-        "liblog",
+-        "libhidlbase",
+-        "libhardware",
+-        "libutils",
+-        "libbase",
+-        "android.hardware.biometrics.fingerprint@2.1",
+-        "vendor.oppo.hardware.biometrics.fingerprint@2.1",
+-    ],
+-}
+diff --git a/hal/oppo-fp/BiometricsFingerprint.cpp b/hal/oppo-fp/BiometricsFingerprint.cpp
+deleted file mode 100644
+index ab4a376..0000000
+--- a/hal/oppo-fp/BiometricsFingerprint.cpp
++++ /dev/null
+@@ -1,267 +0,0 @@
+-/*
+- * Copyright (C) 2017 The Android Open Source Project
+- *
+- * Licensed under the Apache License, Version 2.0 (the "License");
+- * you may not use this file except in compliance with the License.
+- * You may obtain a copy of the License at
+- *
+- *      http://www.apache.org/licenses/LICENSE-2.0
+- *
+- * Unless required by applicable law or agreed to in writing, software
+- * distributed under the License is distributed on an "AS IS" BASIS,
+- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+- * See the License for the specific language governing permissions and
+- * limitations under the License.
+- */
+-#define LOG_TAG "android.hardware.biometrics.fingerprint@2.1-service.oppo.compat"
+-#define LOG_VERBOSE "android.hardware.biometrics.fingerprint@2.1-service.oppo.compat"
+-
+-#include <hardware/hardware.h>
+-#include <hardware/fingerprint.h>
+-#include "BiometricsFingerprint.h"
+-
+-#include <inttypes.h>
+-#include <unistd.h>
+-#include <utils/Log.h>
+-#include <thread>
+-
+-namespace android {
+-namespace hardware {
+-namespace biometrics {
+-namespace fingerprint {
+-namespace V2_1 {
+-namespace implementation {
+-
+-BiometricsFingerprint::BiometricsFingerprint() {
+-    for(int i=0; i<10; i++) {
+-        mOppoBiometricsFingerprint = vendor::oppo::hardware::biometrics::fingerprint::V2_1::IBiometricsFingerprint::tryGetService();
+-        if(mOppoBiometricsFingerprint != nullptr) break;
+-        sleep(10);
+-    }
+-    if(mOppoBiometricsFingerprint == nullptr) exit(0);
+-}
+-
+-static bool receivedCancel;
+-static bool receivedEnumerate;
+-static uint64_t myDeviceId;
+-static std::vector<uint32_t> knownFingers;
+-class OppoClientCallback : public vendor::oppo::hardware::biometrics::fingerprint::V2_1::IBiometricsFingerprintClientCallback {
+-public:
+-    sp<android::hardware::biometrics::fingerprint::V2_1::IBiometricsFingerprintClientCallback> mClientCallback;
+-
+-    OppoClientCallback(sp<android::hardware::biometrics::fingerprint::V2_1::IBiometricsFingerprintClientCallback> clientCallback) : mClientCallback(clientCallback) {}
+-    Return<void> onEnrollResult(uint64_t deviceId, uint32_t fingerId,
+-        uint32_t groupId, uint32_t remaining) {
+-        ALOGE("onEnrollResult %" PRIu64 " %u %u %u", deviceId, fingerId, groupId, remaining);
+-        if(mClientCallback != nullptr)
+-            mClientCallback->onEnrollResult(deviceId, fingerId, groupId, remaining);
+-        return Void();
+-    }
+-
+-    Return<void> onAcquired(uint64_t deviceId, vendor::oppo::hardware::biometrics::fingerprint::V2_1::FingerprintAcquiredInfo acquiredInfo,
+-        int32_t vendorCode) {
+-        ALOGE("onAcquired %" PRIu64 " %d", deviceId, vendorCode);
+-        if(mClientCallback != nullptr)
+-            mClientCallback->onAcquired(deviceId, OppoToAOSPFingerprintAcquiredInfo(acquiredInfo), vendorCode);
+-        return Void();
+-    }
+-
+-    Return<void> onAuthenticated(uint64_t deviceId, uint32_t fingerId, uint32_t groupId,
+-        const hidl_vec<uint8_t>& token) {
+-        ALOGE("onAuthenticated %" PRIu64 " %u %u", deviceId, fingerId, groupId);
+-        if(mClientCallback != nullptr)
+-            mClientCallback->onAuthenticated(deviceId, fingerId, groupId, token);
+-        return Void();
+-    }
+-
+-    Return<void> onError(uint64_t deviceId, vendor::oppo::hardware::biometrics::fingerprint::V2_1::FingerprintError error, int32_t vendorCode) {
+-        ALOGE("onError %" PRIu64 " %d", deviceId, vendorCode);
+-        if(error == vendor::oppo::hardware::biometrics::fingerprint::V2_1::FingerprintError::ERROR_CANCELED) {
+-            receivedCancel = true;
+-        }
+-        if(mClientCallback != nullptr)
+-            mClientCallback->onError(deviceId, OppoToAOSPFingerprintError(error), vendorCode);
+-        return Void();
+-    }
+-
+-    Return<void> onRemoved(uint64_t deviceId, uint32_t fingerId, uint32_t groupId,
+-        uint32_t remaining) {
+-        ALOGE("onRemoved %" PRIu64 " %" PRIu32, deviceId, fingerId);
+-        if(mClientCallback != nullptr)
+-            mClientCallback->onRemoved(deviceId, fingerId, groupId, remaining);
+-        return Void();
+-    }
+-
+-    Return<void> onEnumerate(uint64_t deviceId, uint32_t fingerId, uint32_t groupId,
+-        uint32_t remaining) {
+-        receivedEnumerate = true;
+-        ALOGE("onEnumerate %" PRIu64 " %u %u %u", deviceId, fingerId, groupId, remaining);
+-        if(mClientCallback != nullptr)
+-            mClientCallback->onEnumerate(deviceId, fingerId, groupId, remaining);
+-        return Void();
+-    }
+-
+-    Return<void> onTouchUp(uint64_t deviceId) { return Void(); }
+-    Return<void> onTouchDown(uint64_t deviceId) { return Void(); }
+-    Return<void> onSyncTemplates(uint64_t deviceId, const hidl_vec<uint32_t>& fingerId, uint32_t remaining) {
+-        ALOGE("onSyncTemplates %" PRIu64 " %zu %" PRIu32, deviceId, fingerId.size(), remaining);
+-        myDeviceId = deviceId;
+-
+-        for(auto fid : fingerId) {
+-            ALOGE("\t- %u", fid);
+-        }
+-        knownFingers = fingerId;
+-
+-        return Void();
+-    }
+-    Return<void> onFingerprintCmd(int32_t deviceId, const hidl_vec<uint32_t>& groupId, uint32_t remaining) { return Void(); }
+-    Return<void> onImageInfoAcquired(uint32_t type, uint32_t quality, uint32_t match_score) { return Void(); }
+-    Return<void> onMonitorEventTriggered(uint32_t type, const hidl_string& data) { return Void(); }
+-    Return<void> onEngineeringInfoUpdated(uint32_t length, const hidl_vec<uint32_t>& keys, const hidl_vec<hidl_string>& values) { return Void(); }
+-    Return<void> onUIReady(int64_t deviceId) { return Void(); }
+-
+-private:
+-
+-    Return<android::hardware::biometrics::fingerprint::V2_1::FingerprintAcquiredInfo> OppoToAOSPFingerprintAcquiredInfo(vendor::oppo::hardware::biometrics::fingerprint::V2_1::FingerprintAcquiredInfo info) {
+-        switch(info) {
+-            case vendor::oppo::hardware::biometrics::fingerprint::V2_1::FingerprintAcquiredInfo::ACQUIRED_GOOD: return android::hardware::biometrics::fingerprint::V2_1::FingerprintAcquiredInfo::ACQUIRED_GOOD;
+-            case vendor::oppo::hardware::biometrics::fingerprint::V2_1::FingerprintAcquiredInfo::ACQUIRED_PARTIAL: return android::hardware::biometrics::fingerprint::V2_1::FingerprintAcquiredInfo::ACQUIRED_PARTIAL;
+-            case vendor::oppo::hardware::biometrics::fingerprint::V2_1::FingerprintAcquiredInfo::ACQUIRED_INSUFFICIENT: return android::hardware::biometrics::fingerprint::V2_1::FingerprintAcquiredInfo::ACQUIRED_INSUFFICIENT;
+-            case vendor::oppo::hardware::biometrics::fingerprint::V2_1::FingerprintAcquiredInfo::ACQUIRED_IMAGER_DIRTY: return android::hardware::biometrics::fingerprint::V2_1::FingerprintAcquiredInfo::ACQUIRED_IMAGER_DIRTY;
+-            case vendor::oppo::hardware::biometrics::fingerprint::V2_1::FingerprintAcquiredInfo::ACQUIRED_TOO_SLOW: return android::hardware::biometrics::fingerprint::V2_1::FingerprintAcquiredInfo::ACQUIRED_TOO_SLOW;
+-            case vendor::oppo::hardware::biometrics::fingerprint::V2_1::FingerprintAcquiredInfo::ACQUIRED_TOO_FAST: return android::hardware::biometrics::fingerprint::V2_1::FingerprintAcquiredInfo::ACQUIRED_TOO_FAST;
+-            case vendor::oppo::hardware::biometrics::fingerprint::V2_1::FingerprintAcquiredInfo::ACQUIRED_VENDOR: return android::hardware::biometrics::fingerprint::V2_1::FingerprintAcquiredInfo::ACQUIRED_VENDOR;
+-            default:
+-                return android::hardware::biometrics::fingerprint::V2_1::FingerprintAcquiredInfo::ACQUIRED_GOOD;
+-        }
+-    }
+-
+-    Return<android::hardware::biometrics::fingerprint::V2_1::FingerprintError> OppoToAOSPFingerprintError(vendor::oppo::hardware::biometrics::fingerprint::V2_1::FingerprintError error) {
+-        switch(error) {
+-            case vendor::oppo::hardware::biometrics::fingerprint::V2_1::FingerprintError::ERROR_NO_ERROR: return android::hardware::biometrics::fingerprint::V2_1::FingerprintError::ERROR_NO_ERROR;
+-            case vendor::oppo::hardware::biometrics::fingerprint::V2_1::FingerprintError::ERROR_HW_UNAVAILABLE: return android::hardware::biometrics::fingerprint::V2_1::FingerprintError::ERROR_HW_UNAVAILABLE;
+-            case vendor::oppo::hardware::biometrics::fingerprint::V2_1::FingerprintError::ERROR_UNABLE_TO_PROCESS: return android::hardware::biometrics::fingerprint::V2_1::FingerprintError::ERROR_UNABLE_TO_PROCESS;
+-            case vendor::oppo::hardware::biometrics::fingerprint::V2_1::FingerprintError::ERROR_TIMEOUT: return android::hardware::biometrics::fingerprint::V2_1::FingerprintError::ERROR_TIMEOUT;
+-            case vendor::oppo::hardware::biometrics::fingerprint::V2_1::FingerprintError::ERROR_NO_SPACE: return android::hardware::biometrics::fingerprint::V2_1::FingerprintError::ERROR_NO_SPACE;
+-            case vendor::oppo::hardware::biometrics::fingerprint::V2_1::FingerprintError::ERROR_CANCELED: return android::hardware::biometrics::fingerprint::V2_1::FingerprintError::ERROR_CANCELED;
+-            case vendor::oppo::hardware::biometrics::fingerprint::V2_1::FingerprintError::ERROR_UNABLE_TO_REMOVE: return android::hardware::biometrics::fingerprint::V2_1::FingerprintError::ERROR_UNABLE_TO_REMOVE;
+-            case vendor::oppo::hardware::biometrics::fingerprint::V2_1::FingerprintError::ERROR_LOCKOUT: return android::hardware::biometrics::fingerprint::V2_1::FingerprintError::ERROR_LOCKOUT;
+-            case vendor::oppo::hardware::biometrics::fingerprint::V2_1::FingerprintError::ERROR_VENDOR: return android::hardware::biometrics::fingerprint::V2_1::FingerprintError::ERROR_VENDOR;
+-            default:
+-                return android::hardware::biometrics::fingerprint::V2_1::FingerprintError::ERROR_NO_ERROR;
+-        }
+-    }
+-};
+-
+-Return<uint64_t> BiometricsFingerprint::setNotify(
+-        const sp<IBiometricsFingerprintClientCallback>& clientCallback) {
+-    ALOGE("setNotify");
+-    mOppoClientCallback = new OppoClientCallback(clientCallback);
+-    return mOppoBiometricsFingerprint->setNotify(mOppoClientCallback);
+-}
+-
+-Return<RequestStatus> BiometricsFingerprint::OppoToAOSPRequestStatus(vendor::oppo::hardware::biometrics::fingerprint::V2_1::RequestStatus req) {
+-    switch(req) {
+-        case vendor::oppo::hardware::biometrics::fingerprint::V2_1::RequestStatus::SYS_UNKNOWN: return RequestStatus::SYS_UNKNOWN;
+-        case vendor::oppo::hardware::biometrics::fingerprint::V2_1::RequestStatus::SYS_OK: return RequestStatus::SYS_OK;
+-        case vendor::oppo::hardware::biometrics::fingerprint::V2_1::RequestStatus::SYS_ENOENT: return RequestStatus::SYS_ENOENT;
+-        case vendor::oppo::hardware::biometrics::fingerprint::V2_1::RequestStatus::SYS_EINTR: return RequestStatus::SYS_EINTR;
+-        case vendor::oppo::hardware::biometrics::fingerprint::V2_1::RequestStatus::SYS_EIO: return RequestStatus::SYS_EIO;
+-        case vendor::oppo::hardware::biometrics::fingerprint::V2_1::RequestStatus::SYS_EAGAIN: return RequestStatus::SYS_EAGAIN;
+-        case vendor::oppo::hardware::biometrics::fingerprint::V2_1::RequestStatus::SYS_ENOMEM: return RequestStatus::SYS_ENOMEM;
+-        case vendor::oppo::hardware::biometrics::fingerprint::V2_1::RequestStatus::SYS_EACCES: return RequestStatus::SYS_EACCES;
+-        case vendor::oppo::hardware::biometrics::fingerprint::V2_1::RequestStatus::SYS_EFAULT: return RequestStatus::SYS_EFAULT;
+-        case vendor::oppo::hardware::biometrics::fingerprint::V2_1::RequestStatus::SYS_EBUSY: return RequestStatus::SYS_EBUSY;
+-        case vendor::oppo::hardware::biometrics::fingerprint::V2_1::RequestStatus::SYS_EINVAL: return RequestStatus::SYS_EINVAL;
+-        case vendor::oppo::hardware::biometrics::fingerprint::V2_1::RequestStatus::SYS_ENOSPC: return RequestStatus::SYS_ENOSPC;
+-        case vendor::oppo::hardware::biometrics::fingerprint::V2_1::RequestStatus::SYS_ETIMEDOUT: return RequestStatus::SYS_ETIMEDOUT;
+-        default:
+-            return RequestStatus::SYS_UNKNOWN;
+-    }
+-}
+-
+-Return<uint64_t> BiometricsFingerprint::preEnroll()  {
+-    ALOGE("preEnroll");
+-    return mOppoBiometricsFingerprint->preEnroll();
+-}
+-
+-Return<RequestStatus> BiometricsFingerprint::enroll(const hidl_array<uint8_t, 69>& hat,
+-    uint32_t gid, uint32_t timeoutSec)  {
+-    ALOGE("enroll");
+-    return OppoToAOSPRequestStatus(mOppoBiometricsFingerprint->enroll(hat, gid, timeoutSec));
+-}
+-
+-Return<RequestStatus> BiometricsFingerprint::postEnroll()  {
+-    ALOGE("postEnroll");
+-    return OppoToAOSPRequestStatus(mOppoBiometricsFingerprint->postEnroll());
+-}
+-
+-Return<uint64_t> BiometricsFingerprint::getAuthenticatorId()  {
+-    ALOGE("getAuthId");
+-    return mOppoBiometricsFingerprint->getAuthenticatorId();
+-}
+-
+-Return<RequestStatus> BiometricsFingerprint::cancel()  {
+-    receivedCancel = false;
+-    RequestStatus ret = OppoToAOSPRequestStatus(mOppoBiometricsFingerprint->cancel());
+-    ALOGE("CANCELING");
+-    if(!receivedCancel) {
+-        ALOGE("Sending cancel error");
+-        mOppoClientCallback->mClientCallback->onError(
+-                myDeviceId,
+-                android::hardware::biometrics::fingerprint::V2_1::FingerprintError::ERROR_CANCELED,
+-                0);
+-    }
+-    return ret;
+-}
+-
+-Return<RequestStatus> BiometricsFingerprint::enumerate()  {
+-    receivedEnumerate = false;
+-    RequestStatus ret = OppoToAOSPRequestStatus(mOppoBiometricsFingerprint->enumerate());
+-    ALOGE("ENUMERATING");
+-    if(ret == RequestStatus::SYS_OK && !receivedEnumerate) {
+-        size_t nFingers = knownFingers.size();
+-        ALOGE("received fingers, sending our own %zu", nFingers);
+-        if(nFingers > 0) {
+-            for(auto finger: knownFingers) {
+-                mOppoClientCallback->mClientCallback->onEnumerate(
+-                        myDeviceId,
+-                        finger,
+-                        0,
+-                        --nFingers);
+-
+-            }
+-        } else {
+-            mOppoClientCallback->mClientCallback->onEnumerate(
+-                    myDeviceId,
+-                    0,
+-                    0,
+-                    0);
+-
+-        }
+-    }
+-    return ret;
+-}
+-
+-Return<RequestStatus> BiometricsFingerprint::remove(uint32_t gid, uint32_t fid)  {
+-    ALOGE("remove");
+-    return OppoToAOSPRequestStatus(mOppoBiometricsFingerprint->remove(gid, fid));
+-}
+-
+-Return<RequestStatus> BiometricsFingerprint::setActiveGroup(uint32_t gid,
+-    const hidl_string& storePath)  {
+-    ALOGE("setActiveGroup");
+-    return OppoToAOSPRequestStatus(mOppoBiometricsFingerprint->setActiveGroup(gid, storePath));
+-}
+-
+-Return<RequestStatus> BiometricsFingerprint::authenticate(uint64_t operationId, uint32_t gid)  {
+-    ALOGE("auth");
+-    return OppoToAOSPRequestStatus(mOppoBiometricsFingerprint->authenticate(operationId, gid));
+-}
+-
+-} // namespace implementation
+-}  // namespace V2_1
+-}  // namespace fingerprint
+-}  // namespace biometrics
+-}  // namespace hardware
+-}  // namespace android
+diff --git a/hal/oppo-fp/BiometricsFingerprint.h b/hal/oppo-fp/BiometricsFingerprint.h
+deleted file mode 100644
+index 5c4050f..0000000
+--- a/hal/oppo-fp/BiometricsFingerprint.h
++++ /dev/null
+@@ -1,78 +0,0 @@
+-/*
+- * Copyright (C) 2017 The Android Open Source Project
+- *
+- * Licensed under the Apache License, Version 2.0 (the "License");
+- * you may not use this file except in compliance with the License.
+- * You may obtain a copy of the License at
+- *
+- *      http://www.apache.org/licenses/LICENSE-2.0
+- *
+- * Unless required by applicable law or agreed to in writing, software
+- * distributed under the License is distributed on an "AS IS" BASIS,
+- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+- * See the License for the specific language governing permissions and
+- * limitations under the License.
+- */
+-
+-#ifndef ANDROID_HARDWARE_BIOMETRICS_FINGERPRINT_V2_1_BIOMETRICSFINGERPRINT_H
+-#define ANDROID_HARDWARE_BIOMETRICS_FINGERPRINT_V2_1_BIOMETRICSFINGERPRINT_H
+-
+-#include <log/log.h>
+-#include <android/log.h>
+-#include <hardware/hardware.h>
+-#include <hardware/fingerprint.h>
+-#include <hidl/MQDescriptor.h>
+-#include <hidl/Status.h>
+-#include <android/hardware/biometrics/fingerprint/2.1/IBiometricsFingerprint.h>
+-#include <android/hardware/biometrics/fingerprint/2.1/types.h>
+-#include <vendor/oppo/hardware/biometrics/fingerprint/2.1/IBiometricsFingerprint.h>
+-
+-namespace android {
+-namespace hardware {
+-namespace biometrics {
+-namespace fingerprint {
+-namespace V2_1 {
+-namespace implementation {
+-
+-using ::android::hardware::biometrics::fingerprint::V2_1::IBiometricsFingerprint;
+-using ::android::hardware::biometrics::fingerprint::V2_1::IBiometricsFingerprintClientCallback;
+-using ::android::hardware::biometrics::fingerprint::V2_1::RequestStatus;
+-using ::android::hardware::Return;
+-using ::android::hardware::Void;
+-using ::android::hardware::hidl_vec;
+-using ::android::hardware::hidl_string;
+-using ::android::OK;
+-using ::android::sp;
+-using ::android::status_t;
+-
+-class OppoClientCallback;
+-struct BiometricsFingerprint : public IBiometricsFingerprint {
+-public:
+-    BiometricsFingerprint();
+-
+-    // Methods from ::android::hardware::biometrics::fingerprint::V2_1::IBiometricsFingerprint follow.
+-    Return<uint64_t> setNotify(const sp<IBiometricsFingerprintClientCallback>& clientCallback) override;
+-    Return<uint64_t> preEnroll() override;
+-    Return<RequestStatus> enroll(const hidl_array<uint8_t, 69>& hat, uint32_t gid, uint32_t timeoutSec) override;
+-    Return<RequestStatus> postEnroll() override;
+-    Return<uint64_t> getAuthenticatorId() override;
+-    Return<RequestStatus> cancel() override;
+-    Return<RequestStatus> enumerate() override;
+-    Return<RequestStatus> remove(uint32_t gid, uint32_t fid) override;
+-    Return<RequestStatus> setActiveGroup(uint32_t gid, const hidl_string& storePath) override;
+-    Return<RequestStatus> authenticate(uint64_t operationId, uint32_t gid) override;
+-
+-private:
+-    sp<vendor::oppo::hardware::biometrics::fingerprint::V2_1::IBiometricsFingerprint> mOppoBiometricsFingerprint;
+-    sp<OppoClientCallback> mOppoClientCallback;
+-    static Return<RequestStatus> OppoToAOSPRequestStatus(vendor::oppo::hardware::biometrics::fingerprint::V2_1::RequestStatus req);
+-};
+-
+-}  // namespace implementation
+-}  // namespace V2_1
+-}  // namespace fingerprint
+-}  // namespace biometrics
+-}  // namespace hardware
+-}  // namespace android
+-
+-#endif  // ANDROID_HARDWARE_BIOMETRICS_FINGERPRINT_V2_1_BIOMETRICSFINGERPRINT_H
+diff --git a/hal/oppo-fp/android.hardware.biometrics.fingerprint@2.1-service.oppo.rc b/hal/oppo-fp/android.hardware.biometrics.fingerprint@2.1-service.oppo.rc
+deleted file mode 100644
+index d5baffa..0000000
+--- a/hal/oppo-fp/android.hardware.biometrics.fingerprint@2.1-service.oppo.rc
++++ /dev/null
+@@ -1,9 +0,0 @@
+-service fps_hal.oppo.compat /system/bin/hw/android.hardware.biometrics.fingerprint@2.1-service.oppo.compat
+-    # "class hal" causes a race condition on some devices due to files created
+-    # in /data. As a workaround, postpone startup until later in boot once
+-    # /data is mounted.
+-    class late_start
+-    user system
+-    group system input uhid
+-    writepid /dev/cpuset/system-background/tasks
+-    oneshot
+diff --git a/hal/oppo-fp/service.cpp b/hal/oppo-fp/service.cpp
+deleted file mode 100644
+index 4b7623e..0000000
+--- a/hal/oppo-fp/service.cpp
 +++ /dev/null
 @@ -1,61 +0,0 @@
 -/*
