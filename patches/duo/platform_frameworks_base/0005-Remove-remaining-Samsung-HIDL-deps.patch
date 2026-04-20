@@ -1,0 +1,47 @@
+From 1747c45f306865cc5f0f48fd50acc15dc267a130 Mon Sep 17 00:00:00 2001
+From: Surface Duo Builder <bariccatti@gmail.com>
+Date: Mon, 20 Apr 2026 02:35:57 +0000
+Subject: [PATCH] Remove remaining Samsung radio/light HIDL deps
+
+Change-Id: Ib3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0b1c2
+---
+ Android.bp                   | 2 --
+ services/core/jni/Android.bp | 2 --
+ 2 files changed, 4 deletions(-)
+
+diff --git a/Android.bp b/Android.bp
+index 4ba0ac47d..da4b8fca8 100644
+--- a/Android.bp
++++ b/Android.bp
+@@ -228,7 +228,6 @@ java_library {
+         "android.hardware.gnss-V2.1-java",
+         "android.hardware.health-V1.0-java-constants",
+         "android.hardware.radio-V1.6-java",
+-        "vendor.samsung.hardware.radio-V2.2-java",
+         "android.hardware.radio.data-V5-java",
+         "android.hardware.radio.ims-V4-java",
+         "android.hardware.radio.messaging-V5-java",
+@@ -236,7 +235,6 @@ java_library {
+         "android.hardware.radio.network-V5-java",
+         "android.hardware.radio.sim-V5-java",
+         "android.hardware.radio.voice-V5-java",
+-        "vendor.samsung.hardware.radio.network-V1-java",
+         "android.hardware.thermal-V1.0-java-constants",
+         "android.hardware.thermal-V1.0-java",
+         "android.hardware.thermal-V1.1-java",
+diff --git a/services/core/jni/Android.bp b/services/core/jni/Android.bp
+index 2a1203e45..6bd4e821b 100644
+--- a/services/core/jni/Android.bp
++++ b/services/core/jni/Android.bp
+@@ -205,8 +205,6 @@ cc_defaults {
+         "android_location_flags_c_lib",
+         "server_configurable_flags",
+         "service.incremental",
+-        "vendor.samsung.hardware.light@2.0",
+-        "vendor.samsung.hardware.light@3.0",
+     ],
+ 
+     static_libs: [
+-- 
+2.34.1
+
