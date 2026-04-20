@@ -1,16 +1,15 @@
-From 29a2d778a537e7864b5fc0203a74d109cc2d737d Mon Sep 17 00:00:00 2001
+From 28d84fd2f25beda5448457213e7047df75a004ff Mon Sep 17 00:00:00 2001
 From: Surface Duo Builder <bariccatti@gmail.com>
-Date: Mon, 20 Apr 2026 02:19:50 +0000
+Date: Mon, 20 Apr 2026 02:22:51 +0000
 Subject: [PATCH] Remove OEM HALs with missing vendor HIDL dependencies
 
-Remove oplus/oppo fingerprint HALs, oneplus-motor, mtk-sms-fwk-ready
-from build. These depend on vendor.*.hardware.* HIDL interfaces that
-do not exist in our vendor/interfaces tree (only Qualcomm interfaces
-are available).
+Remove oplus/oppo fingerprint HALs and OEM-specific packages from
+PRODUCT_PACKAGES that depend on missing vendor HIDL interfaces.
+Only Qualcomm interfaces are available in vendor/interfaces.
 
 Change-Id: Ia1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9b0
 ---
- base.mk                                       |   2 -
+ base.mk                                       |   5 -
  hal/oplus-fp/Android.bp                       |  23 --
  hal/oplus-fp/BiometricsFingerprint.cpp        | 267 ------------------
  hal/oplus-fp/BiometricsFingerprint.h          |  78 -----
@@ -21,7 +20,7 @@ Change-Id: Ia1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9b0
  hal/oppo-fp/BiometricsFingerprint.h           |  78 -----
  ...biometrics.fingerprint@2.1-service.oppo.rc |   9 -
  hal/oppo-fp/service.cpp                       |  61 ----
- 11 files changed, 878 deletions(-)
+ 11 files changed, 881 deletions(-)
  delete mode 100644 hal/oplus-fp/Android.bp
  delete mode 100644 hal/oplus-fp/BiometricsFingerprint.cpp
  delete mode 100644 hal/oplus-fp/BiometricsFingerprint.h
@@ -34,7 +33,7 @@ Change-Id: Ia1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9b0
  delete mode 100644 hal/oppo-fp/service.cpp
 
 diff --git a/base.mk b/base.mk
-index 04cf120..1e89b03 100644
+index 04cf120..47604ed 100644
 --- a/base.mk
 +++ b/base.mk
 @@ -155,12 +155,10 @@ PRODUCT_COPY_FILES += \
@@ -50,6 +49,30 @@ index 04cf120..1e89b03 100644
  
  PRODUCT_PACKAGES += \
      Stk
+@@ -182,7 +180,6 @@ PRODUCT_COPY_FILES += \
+     device/phh/treble/ld.config.26.txt:system/etc/ld.config.26.txt \
+ 
+ PRODUCT_PACKAGES += \
+-    asus-motor
+ 
+ # Privapp-permissions whitelist for PhhTrebleApp
+ PRODUCT_COPY_FILES += \
+@@ -216,7 +213,6 @@ PRODUCT_PACKAGES += \
+     NavigationBarMode2ButtonOverlay
+ 
+ PRODUCT_PACKAGES += \
+-    oplus-alert-slider
+ 
+ PRODUCT_COPY_FILES += \
+     device/phh/treble/overrides/nothing.txt:system/etc/smartpa_params/empty \
+@@ -228,7 +224,6 @@ PRODUCT_COPY_FILES += \
+ PRODUCT_PACKAGES += phh-ota
+ 
+ PRODUCT_PACKAGES += \
+-    xiaomi-touch
+ 
+ PRODUCT_COPY_FILES += \
+     frameworks/av/services/audiopolicy/config/a2dp_audio_policy_configuration_7_0.xml:system/etc/a2dp_audio_policy_configuration_7_0.xml \
 diff --git a/hal/oplus-fp/Android.bp b/hal/oplus-fp/Android.bp
 deleted file mode 100644
 index 6f9448b..0000000
