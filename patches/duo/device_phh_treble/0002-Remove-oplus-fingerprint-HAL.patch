@@ -1,13 +1,8 @@
-[detached HEAD 21d40a3] Remove oplus fingerprint HAL (missing HIDL dependency)
- 5 files changed, 438 deletions(-)
- delete mode 100644 hal/oplus-fp/Android.bp
- delete mode 100644 hal/oplus-fp/BiometricsFingerprint.cpp
- delete mode 100644 hal/oplus-fp/BiometricsFingerprint.h
- delete mode 100644 hal/oplus-fp/android.hardware.biometrics.fingerprint@2.1-service.oplus.rc
+rm 'hal/oplus-fp/service.cpp'
  delete mode 100644 hal/oplus-fp/service.cpp
-From 21d40a3d4890398ab6d18c9e6e4a1a62d0780908 Mon Sep 17 00:00:00 2001
+From bc245596e352fb12e1e05cb2abc56e6402405fe3 Mon Sep 17 00:00:00 2001
 From: Surface Duo Builder <bariccatti@gmail.com>
-Date: Mon, 20 Apr 2026 01:29:05 +0000
+Date: Mon, 20 Apr 2026 01:33:03 +0000
 Subject: [PATCH] Remove oplus fingerprint HAL (missing HIDL dependency)
 
 Change-Id: Ia1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9b0
